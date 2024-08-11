@@ -1,0 +1,90 @@
+import uuid
+from django.db import models
+from django.utils.translation import gettext as _
+# from django.utils.translation import gettext_lazy as _
+from mptt.models import MPTTModel, TreeForeignKey
+
+
+
+class Office(models.Model) :
+    OFFICE_TYPE = (
+        ('head_office', 'Head Office'),
+        ('sub_office', 'Sub Office')
+    )
+
+    id = models.UUIDField(_("Unique ID"), primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(_("Name"), max_length=50)
+    office_type = models.CharField(_("Office type"), choices=OFFICE_TYPE, max_length=20)
+    is_active = models.BooleanField(_('Is active'), default=True)
+    created_at = models.DateField(_("Date"), auto_now=False, auto_now_add=True)
+    
+
+    def __str__(self) -> str:
+        return self.name
+
+
+
+class Package(models.Model) :
+    id = models.UUIDField(_("Unique ID"), primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(_("Name"), max_length=50)
+    price = models.DecimalField(_('Price'), max_digits=6, decimal_places=2)
+    description = models.TextField(_("Description"), null=True)
+    created_at = models.DateField(_("Date"), auto_now=False, auto_now_add=True)
+
+    def __str__(self) -> str:
+        return self.name
+
+
+
+class Member(models.Model) :
+    id = models.UUIDField(_("Unique ID"), primary_key=True, default=uuid.uuid4, editable=False)
+    full_name = models.CharField(_("Full Name"), max_length=50)
+    company_id = models.CharField(_("Company ID"), max_length=50)
+    created_at = models.DateField(_("Date"), auto_now=False, auto_now_add=True)
+
+
+    def __str__(self) -> str:
+        return self.full_name
+    
+
+
+class Account(MPTTModel) :
+    id = models.UUIDField(_("Unique ID"), primary_key=True, default=uuid.uuid4, editable=False)
+    member = models.ForeignKey(Member, verbose_name=_("Member"), related_name="accounts", on_delete=models.CASCADE)
+    package = models.ForeignKey(Package, verbose_name=_("Package"), null=True, on_delete=models.SET_NULL)
+    referral_account = models.ForeignKey('self', verbose_name=_("Referral account"), null=True, blank=True, on_delete=models.SET_NULL)
+    parent = TreeForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='children')
+    rewards = models.ManyToManyField("prices.Reward", verbose_name=_("Account rewards"), blank=True)
+    is_active = models.BooleanField(_('Is active'), default=True)
+    created_at = models.DateField(_("Date"), auto_now=False, auto_now_add=True)
+
+
+    class MPTTMeta:
+        order_insertion_by = ['created_at']
+
+
+    # def save(self, *args, **kwargs):
+    #     if self.id is None:
+    #         last_order_number = Account.objects.all().order_by('order_number').last()
+    #         if last_order_number:
+    #             self.order_number = last_order_number.order_number + 1
+    #         else:
+    #             self.order_number = 1
+    #     super(Account, self).save(*args, **kwargs)
+
+
+    def __str__(self) -> str:
+        return self.member.full_name
+    
+
+
+class Subscription(models.Model) :
+    id = models.UUIDField(_("Unique ID"), primary_key=True, default=uuid.uuid4, editable=False)
+    office = models.ForeignKey(Office, verbose_name=_("Office"), related_name="subscriptions", null=True, on_delete=models.SET_NULL)
+    member_account = models.ForeignKey(Account, verbose_name=_("Member account"), null=True, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(_('Created on'), auto_now_add=True)
+
+
+    def __str__(self) -> str:
+        return self.member_account
+    
