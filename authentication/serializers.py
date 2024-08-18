@@ -33,8 +33,6 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def get_token(cls, attrs):
         token = super().get_token(attrs)
 
-        del token['user_id']
-
         # Add custom claims
         token['user'] = CustomUserSerializer(attrs).data
 

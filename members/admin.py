@@ -5,7 +5,7 @@ from .models import Office, Package, Account, Subscription, Country, Location
 
 @admin.register(Country)
 class CountryAdmin(admin.ModelAdmin):
-    list_display = ['id', 'name', 'created_at']
+    list_display = ['id', 'name', 'code', 'created_at']
 
 
 

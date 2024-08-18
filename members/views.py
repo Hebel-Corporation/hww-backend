@@ -4,6 +4,20 @@ from members.models import *
 from .serializers import *
 
 
+class CountryViewSet(viewsets.ModelViewSet) :
+    queryset = Country.objects.all()
+    serializer_class = CountrySerializer
+    permission_classes = [IsAuthenticated]
+
+
+
+class LocationViewSet(viewsets.ModelViewSet) :
+    queryset = Location.objects.all()
+    serializer_class = LocationSerializer
+    permission_classes = [IsAuthenticated]
+
+
+
 class OfficeViewSet(viewsets.ModelViewSet) :
     queryset = Office.objects.all()
     serializer_class = OfficeSerializer

@@ -10,6 +10,7 @@ class Country(models.Model) :
 
     id = models.UUIDField(_("Unique ID"), primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(_("Name"), max_length=100)
+    code = models.CharField(_("code"), max_length=5, null=True, blank=True)
     created_at = models.DateField(_("Date"), auto_now=False, auto_now_add=True)
     
 

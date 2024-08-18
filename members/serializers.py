@@ -3,6 +3,18 @@ from drf_queryfields import QueryFieldsMixin
 from members.models import *
 
 
+class CountrySerializer(QueryFieldsMixin, serializers.ModelSerializer):
+    class Meta:
+        model = Country
+        fields = '__all__'
+
+
+class LocationSerializer(QueryFieldsMixin, serializers.ModelSerializer):
+    class Meta:
+        model = Location
+        fields = '__all__'
+
+
 class OfficeSerializer(QueryFieldsMixin, serializers.ModelSerializer):
     class Meta:
         model = Office
@@ -14,7 +26,6 @@ class PackageSerializer(QueryFieldsMixin, serializers.ModelSerializer):
     class Meta:
         model = Package
         fields = '__all__'
-
 
 
 
