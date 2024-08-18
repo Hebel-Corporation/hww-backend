@@ -6,6 +6,30 @@ from mptt.models import MPTTModel, TreeForeignKey
 
 
 
+class Country(models.Model) :
+
+    id = models.UUIDField(_("Unique ID"), primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(_("Name"), max_length=100)
+    created_at = models.DateField(_("Date"), auto_now=False, auto_now_add=True)
+    
+
+    def __str__(self) -> str:
+        return self.name
+    
+
+class Location(models.Model) :
+
+    id = models.UUIDField(_("Unique ID"), primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(_("Name"), max_length=50)
+    country = models.ForeignKey(Country, verbose_name=_("Location Country"), on_delete=models.CASCADE)
+    created_at = models.DateField(_("Date"), auto_now=False, auto_now_add=True)
+    
+
+    def __str__(self) -> str:
+        return self.name
+
+
+
 class Office(models.Model) :
     OFFICE_TYPE = (
         ('head_office', 'Head Office'),
@@ -14,6 +38,7 @@ class Office(models.Model) :
 
     id = models.UUIDField(_("Unique ID"), primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(_("Name"), max_length=50)
+    location = models.ForeignKey(Location, verbose_name=_("Office Location"), on_delete=models.SET_NULL, null=True, blank=True)
     office_type = models.CharField(_("Office type"), choices=OFFICE_TYPE, max_length=20)
     is_active = models.BooleanField(_('Is active'), default=True)
     created_at = models.DateField(_("Date"), auto_now=False, auto_now_add=True)
@@ -34,26 +59,15 @@ class Package(models.Model) :
     def __str__(self) -> str:
         return self.name
 
-
-
-class Member(models.Model) :
-    id = models.UUIDField(_("Unique ID"), primary_key=True, default=uuid.uuid4, editable=False)
-    full_name = models.CharField(_("Full Name"), max_length=50)
-    company_id = models.CharField(_("Company ID"), max_length=50)
-    created_at = models.DateField(_("Date"), auto_now=False, auto_now_add=True)
-
-
-    def __str__(self) -> str:
-        return self.full_name
     
 
 
 class Account(MPTTModel) :
     id = models.UUIDField(_("Unique ID"), primary_key=True, default=uuid.uuid4, editable=False)
-    member = models.ForeignKey(Member, verbose_name=_("Member"), related_name="accounts", on_delete=models.CASCADE)
+    member = models.ForeignKey("authentication.CustomUser", verbose_name=_("Member"), related_name="accounts", on_delete=models.CASCADE)
     package = models.ForeignKey(Package, verbose_name=_("Package"), null=True, on_delete=models.SET_NULL)
     referral_account = models.ForeignKey('self', verbose_name=_("Referral account"), null=True, blank=True, on_delete=models.SET_NULL)
-    parent = TreeForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='children')
+    sponsor_account = TreeForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='children')
     rewards = models.ManyToManyField("prices.Reward", verbose_name=_("Account rewards"), blank=True)
     is_active = models.BooleanField(_('Is active'), default=True)
     created_at = models.DateField(_("Date"), auto_now=False, auto_now_add=True)
@@ -80,7 +94,7 @@ class Account(MPTTModel) :
 
 class Subscription(models.Model) :
     id = models.UUIDField(_("Unique ID"), primary_key=True, default=uuid.uuid4, editable=False)
-    office = models.ForeignKey(Office, verbose_name=_("Office"), related_name="subscriptions", null=True, on_delete=models.SET_NULL)
+    office = models.ForeignKey(Office, verbose_name=_("Office Creator"), related_name="subscriptions", null=True, on_delete=models.SET_NULL)
     member_account = models.ForeignKey(Account, verbose_name=_("Member account"), null=True, on_delete=models.CASCADE)
     created_at = models.DateTimeField(_('Created on'), auto_now_add=True)
 

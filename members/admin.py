@@ -1,6 +1,18 @@
 from django.contrib import admin
 from mptt.admin import MPTTModelAdmin
-from .models import Office, Package, Member, Account, Subscription
+from .models import Office, Package, Account, Subscription, Country, Location
+
+
+@admin.register(Country)
+class CountryAdmin(admin.ModelAdmin):
+    list_display = ['id', 'name', 'created_at']
+
+
+
+@admin.register(Location)
+class LocationAdmin(admin.ModelAdmin):
+    list_display = ['id', 'name', 'country', 'created_at']
+
 
 
 @admin.register(Office)
@@ -15,16 +27,11 @@ class PackageAdmin(admin.ModelAdmin):
 
 
 
-@admin.register(Member)
-class MemberAdmin(admin.ModelAdmin):
-    list_display = ['id', 'full_name', 'company_id', 'created_at']
-
-
 
 @admin.register(Account)
-class AccountAdmin(MPTTModelAdmin):
+class AccountAdmin(admin.ModelAdmin):
     mptt_indent_field = "id"
-    list_display = ['id', 'member', 'package', 'referral_account', 'parent', 'is_active', 'created_at']
+    list_display = ['id', 'member', 'package', 'referral_account', 'sponsor_account', 'is_active', 'created_at']
 
 
 

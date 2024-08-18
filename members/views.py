@@ -18,13 +18,6 @@ class PackageViewSet(viewsets.ModelViewSet) :
 
 
 
-class MemberViewSet(viewsets.ModelViewSet) :
-    queryset = Member.objects.all()
-    serializer_class = MemberSerializer
-    permission_classes = [IsAuthenticated]
-
-
-
 class AccountViewSet(viewsets.ModelViewSet) :
     queryset = Account.objects.all()
     serializer_class = AccountSerializer

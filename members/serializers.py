@@ -9,16 +9,10 @@ class OfficeSerializer(QueryFieldsMixin, serializers.ModelSerializer):
         fields = '__all__'
 
 
+
 class PackageSerializer(QueryFieldsMixin, serializers.ModelSerializer):
     class Meta:
         model = Package
-        fields = '__all__'
-
-
-
-class MemberSerializer(QueryFieldsMixin, serializers.ModelSerializer):
-    class Meta:
-        model = Member
         fields = '__all__'
 
 
