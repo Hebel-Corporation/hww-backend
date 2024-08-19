@@ -4,6 +4,8 @@ from django.utils.translation import gettext as _
 # from django.utils.translation import gettext_lazy as _
 from mptt.models import MPTTModel, TreeForeignKey
 
+from authentication.models import CustomUser
+
 
 
 class Office(models.Model) :
@@ -38,9 +40,10 @@ class Package(models.Model) :
 
 class Member(models.Model) :
     id = models.UUIDField(_("Unique ID"), primary_key=True, default=uuid.uuid4, editable=False)
+    user=models.OneToOneField(CustomUser, on_delete=models.CASCADE,related_name='member')
     full_name = models.CharField(_("Full Name"), max_length=50)
     company_id = models.CharField(_("Company ID"), max_length=50)
-    created_at = models.DateField(_("Date"), auto_now=False, auto_now_add=True)
+    phone = models.CharField(max_length=14,blank=True)
 
 
     def __str__(self) -> str:

@@ -44,24 +44,3 @@ class CustomUser(AbstractUser):
     
     def __str__(self):
         return self.username
-    
-
-class Staff(models.Model):
-    user=models.OneToOneField(CustomUser, on_delete=models.CASCADE,primary_key=True,related_name='staff')
-    is_office_admin = models.BooleanField(default=False)
-    is_logistician = models.BooleanField(default=False)
-    is_technician= models.BooleanField(default=False)
-
-    def __str__(self):
-        return str(self.user)
-
-class Member(models.Model):
-    user=models.OneToOneField(CustomUser, on_delete=models.CASCADE,primary_key=True,related_name='member')
-    company_id = models.CharField(_("Company ID"), max_length=50)
-    
-    full_name = models.CharField(_("Full Name"), max_length=50)
-    phone = models.CharField(max_length=14,blank=True)
-
-
-    def __str__(self):
-        return str(self.user)

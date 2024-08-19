@@ -17,7 +17,7 @@ class PackageAdmin(admin.ModelAdmin):
 
 @admin.register(Member)
 class MemberAdmin(admin.ModelAdmin):
-    list_display = ['id', 'full_name', 'company_id', 'created_at']
+    list_display = ['id', 'full_name', 'company_id']
 
 
 

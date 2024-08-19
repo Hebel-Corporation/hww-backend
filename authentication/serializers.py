@@ -1,50 +1,32 @@
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework import serializers
-from .models import CustomUser,Member,Staff
+from members.serializers import MemberSerializer
 
-from django.contrib.auth import get_user_model
-
-
-User = get_user_model()
-
-class StaffSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Staff
-        fields = ['is_office_admin', 'is_logistician', 'is_technician']
-
-
-class MemberSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Member
-        fields = ['company_id', 'full_name', 'phone']
+from .models import CustomUser
+from members.models import Member
 
 
 class CustomUserSerializer(serializers.ModelSerializer):
-    staff = serializers.SerializerMethodField()
+    groups = serializers.SerializerMethodField()
     member = serializers.SerializerMethodField()
 
     class Meta:
         model = CustomUser
-        fields = ['username', 'created_at','staff', 'member']
+        fields = ['username', 'created_at','groups', 'member']
         extra_kwargs = {
             'id':{'read_only' : True},
             'created_at':{'read_only' : True},
             }
 
-    def get_staff(self,obj):
-        if obj.is_admin:
-            try:
-                staff = Staff.objects.get(user=obj)
-                return StaffSerializer(staff).data
-            except Staff.DoesNotExist:
-                return None
-        return None
+    def get_groups(self,user):
+        user_groups = user.groups.all()
+        return [group.name for group in user_groups]
 
-    def get_member(self,obj):
-        if not obj.is_admin:
+    def get_member(self,user):
+        if not user.is_admin:
             try:
-                member = Member.objects.get(user=obj)
+                member = user.member
                 return MemberSerializer(member).data
             except Member.DoesNotExist:
                 return None
@@ -53,11 +35,10 @@ class CustomUserSerializer(serializers.ModelSerializer):
     def __init__(self, *args, **kwargs):
         
         super().__init__(*args, **kwargs)
-        print(self.fields)
         if args[0].is_admin:
             self.fields.pop('member')
         else:
-            self.fields.pop('staff')
+            self.fields.pop('groups')
     
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
