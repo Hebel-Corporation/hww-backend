@@ -16,9 +16,20 @@ class LocationSerializer(QueryFieldsMixin, serializers.ModelSerializer):
 
 
 class OfficeSerializer(QueryFieldsMixin, serializers.ModelSerializer):
+
     class Meta:
         model = Office
         fields = '__all__'
+        extra_kwargs = {
+            'id': {'read_only' : True},
+            'is_active':{'read_only':True},
+            'created_at': {'read_only' : True},
+        }
+
+    def create(self, validated_data):
+        office = Office.objects.create(**validated_data)
+
+        return office
 
 
 
@@ -29,11 +40,11 @@ class PackageSerializer(QueryFieldsMixin, serializers.ModelSerializer):
 
 
 
-# class AccountSerializer(QueryFieldsMixin, serializers.ModelSerializer):
-#     class Meta:
-#         model = Account
-#         fields = '__all__'
-#         depth = 1
+class AccountSerializer(QueryFieldsMixin, serializers.ModelSerializer):
+    class Meta:
+        model = Account
+        fields = '__all__'
+        depth = 1
 
     # children = serializers.SerializerMethodField()
 
@@ -54,9 +65,9 @@ class PackageSerializer(QueryFieldsMixin, serializers.ModelSerializer):
     
 
 
-# class SubscriptionSerializer(QueryFieldsMixin, serializers.ModelSerializer):
-#     class Meta:
-#         model = Subscription
-#         fields = '__all__'
+class SubscriptionSerializer(QueryFieldsMixin, serializers.ModelSerializer):
+    class Meta:
+        model = Subscription
+        fields = '__all__'
 
 
