@@ -3,25 +3,29 @@ from drf_queryfields import QueryFieldsMixin
 from members.models import *
 
 
-# class OfficeSerializer(QueryFieldsMixin, serializers.ModelSerializer):
-#     class Meta:
-#         model = Office
-#         fields = '__all__'
-
-
-# class PackageSerializer(QueryFieldsMixin, serializers.ModelSerializer):
-#     class Meta:
-#         model = Package
-#         fields = '__all__'
-
-
-
-class MemberSerializer(QueryFieldsMixin, serializers.ModelSerializer):
+class CountrySerializer(QueryFieldsMixin, serializers.ModelSerializer):
     class Meta:
-        model = Member
-        fields = ['user', 'full_name', 'company_id', 'phone']
-        # fields = '__all__'
+        model = Country
+        fields = '__all__'
 
+
+class LocationSerializer(QueryFieldsMixin, serializers.ModelSerializer):
+    class Meta:
+        model = Location
+        fields = '__all__'
+
+
+class OfficeSerializer(QueryFieldsMixin, serializers.ModelSerializer):
+    class Meta:
+        model = Office
+        fields = '__all__'
+
+
+
+class PackageSerializer(QueryFieldsMixin, serializers.ModelSerializer):
+    class Meta:
+        model = Package
+        fields = '__all__'
 
 
 
