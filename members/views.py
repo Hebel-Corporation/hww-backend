@@ -47,6 +47,13 @@ class OfficeViewSet(viewsets.ModelViewSet) :
         staffs.update(office=office)
 
         return Response(office_serializer.data, status=status.HTTP_201_CREATED)
+    
+    
+    
+    @action(detail=False, methods=['post'], url_path='assign_staff')
+    def assign_staff():
+
+        return Response()
 
 
 

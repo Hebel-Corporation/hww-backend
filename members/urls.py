@@ -1,9 +1,11 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import *
+from authentication.views import CustomUserViewSet
 
 router = DefaultRouter()
 router.register('offices', OfficeViewSet, basename="offices")
+router.register('users',CustomUserViewSet, basename="users")
 router.register('packages', PackageViewSet, basename="packages")
 router.register('accounts', AccountViewSet, basename="accounts")
 router.register('subscriptions', SubscriptionViewSet, basename="subscriptions")

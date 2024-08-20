@@ -51,6 +51,7 @@ class CustomUser(AbstractUser):
     phone = models.CharField(max_length=14, blank=True, null=True)
     user_type = models.TextField(max_length=10, choices=USER_TYPE_CHOICES, default='member')
     office = models.ForeignKey('members.Office', verbose_name=_("Office Recorder"), blank=True, null=True, on_delete=models.SET_NULL)
+    # created_at = models.DateField(_("Date"), auto_now=False, auto_now_add=True)
 
     objects = CustomUserManager()
     
