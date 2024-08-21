@@ -39,6 +39,7 @@ class Office(models.Model) :
 
     id = models.UUIDField(_("Unique ID"), primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(_("Name"), max_length=50)
+    company_id = models.CharField(_("Company ID"), max_length=50,unique=True)
     location = models.ForeignKey(Location, verbose_name=_("Office Location"), on_delete=models.SET_NULL, null=True, blank=True)
     office_type = models.CharField(_("Office type"), choices=OFFICE_TYPE, max_length=20)
     is_active = models.BooleanField(_('Is active'), default=True)
@@ -66,6 +67,7 @@ class Package(models.Model) :
 class Account(MPTTModel) :
     id = models.UUIDField(_("Unique ID"), primary_key=True, default=uuid.uuid4, editable=False)
     member = models.ForeignKey("authentication.CustomUser", verbose_name=_("Member"), related_name="accounts", on_delete=models.CASCADE)
+    company_id = models.CharField(_("Company ID"), max_length=50,unique=True)
     package = models.ForeignKey(Package, verbose_name=_("Package"), null=True, on_delete=models.SET_NULL)
     referral_account = models.ForeignKey('self', verbose_name=_("Referral account"), null=True, blank=True, on_delete=models.SET_NULL)
     sponsor_account = TreeForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='children')

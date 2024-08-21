@@ -25,6 +25,7 @@ class CustomUserViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'], url_path='staff/create')
     def create_member():
+        
 
         return Response()
     

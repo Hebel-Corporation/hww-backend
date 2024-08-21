@@ -6,14 +6,9 @@ from django.utils.translation import gettext as _
 
 
 class CustomUserManager(BaseUserManager):
-    """
-    Custom user model manager where email is the unique identifiers
-    for authentication instead of usernames.
-    """
+   
     def create_user(self, username, password, **extra_fields):
-        """
-        Create and save a User with the given email and password.
-        """
+        
         if not username:
             raise ValueError(_('The username must be set'))
         
@@ -47,7 +42,7 @@ class CustomUser(AbstractUser):
     )
 
     id = models.UUIDField(_("Unique ID"), primary_key=True, default=uuid.uuid4, editable=False)
-    company_id = models.CharField(_("Company ID"), max_length=50)
+    company_id = models.CharField(_("Company ID"), max_length=50,unique=True)
     phone = models.CharField(max_length=14, blank=True, null=True)
     user_type = models.TextField(max_length=10, choices=USER_TYPE_CHOICES, default='member')
     office = models.ForeignKey('members.Office', verbose_name=_("Office Recorder"), blank=True, null=True, on_delete=models.SET_NULL)

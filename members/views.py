@@ -4,7 +4,9 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from members.models import *
 from .serializers import *
+from authentication.serializers import CustomUserSerializer
 from authentication.models import CustomUser
+from django.contrib.auth.models import Group
 
 
 class CountryViewSet(viewsets.ModelViewSet) :
@@ -29,24 +31,36 @@ class OfficeViewSet(viewsets.ModelViewSet) :
     def create(self, request):
     
         office_data = request.data.get('office')
-        staffs_ids_data = request.data.get('staffs_ids',[])
+        staff_data = request.data.get('staff')
 
 
         office_serializer = OfficeSerializer(data=office_data)
         if not office_serializer.is_valid():
             return Response(office_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
-        staffs = CustomUser.objects.filter(id__in=staffs_ids_data, user_type='staff')
-        if len(staffs) != len(staffs_ids_data):
-            return Response({'error': 'Présence d\'un staff invalide ou utilisateur non staff.'}, status=status.HTTP_400_BAD_REQUEST)
+        staff_serializer = CustomUserSerializer(data=staff_data)
+        if not staff_serializer.is_valid():
+            return Response(staff_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        if not staff_data.get("user_type")=="staff":
+            return Response({"error:":"L'utilisateur doit etre un staff"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        staff_groups = Group.objects.filter(id__in=staff_data.get("groups"))
+        if len(staff_groups) != len(staff_data.get("groups")):
+            return Response({'error': 'Présence d\'un groupe d\'utilisateur invalide.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        staff_data.pop("groups")
 
 
         office = office_serializer.save()
 
-        staffs.update(office=office)
+        staff = CustomUser.objects.create_user(**staff_data)
+        staff.groups.set(staff_groups)
+        staff.office=office
+        staff.save
 
-        return Response(office_serializer.data, status=status.HTTP_201_CREATED)
+        return Response({"office":office_serializer.data,"staff":CustomUserSerializer(staff).data},
+                         status=status.HTTP_201_CREATED)
     
     
     
