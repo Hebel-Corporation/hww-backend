@@ -15,7 +15,12 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 class CustomGroupViewSet(viewsets.ModelViewSet):
     queryset = Group.objects.all()
     serializer_class = CustomGroupSerializer
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        group_queryset = super().get_queryset()
+        return group_queryset.exclude(name='membre')
+    
 
 class CustomUserViewSet(viewsets.ModelViewSet):
     queryset= CustomUser.objects.all()

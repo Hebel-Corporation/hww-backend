@@ -8,7 +8,7 @@ from mptt.models import MPTTModel, TreeForeignKey
 
 class Country(models.Model) :
 
-    id = models.UUIDField(_("Unique ID"), primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.UUIDField(_("ID"), primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(_("Name"), max_length=100)
     code = models.CharField(_("code"), max_length=5, null=True, blank=True)
     created_at = models.DateField(_("Date"), auto_now=False, auto_now_add=True)
@@ -20,7 +20,7 @@ class Country(models.Model) :
 
 class Location(models.Model) :
 
-    id = models.UUIDField(_("Unique ID"), primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.UUIDField(_("ID"), primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(_("Name"), max_length=50)
     country = models.ForeignKey(Country, verbose_name=_("Location Country"), on_delete=models.CASCADE)
     created_at = models.DateField(_("Date"), auto_now=False, auto_now_add=True)
@@ -37,11 +37,11 @@ class Office(models.Model) :
         ('sub_office', 'Sub Office')
     )
 
-    id = models.UUIDField(_("Unique ID"), primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.UUIDField(_("ID"), primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(_("Name"), max_length=50)
-    company_id = models.CharField(_("Company ID"), max_length=50,unique=True)
-    location = models.ForeignKey(Location, verbose_name=_("Office Location"), on_delete=models.SET_NULL, null=True, blank=True)
-    office_type = models.CharField(_("Office type"), choices=OFFICE_TYPE, max_length=20)
+    office_code = models.CharField(_("Office Code"), max_length=50, unique=True)
+    location = models.ForeignKey(Location, on_delete=models.SET_NULL, null=True)
+    office_type = models.CharField(_("Office type"), choices=OFFICE_TYPE, default='sub_office', max_length=20)
     is_active = models.BooleanField(_('Is active'), default=True)
     created_at = models.DateField(_("Date"), auto_now=False, auto_now_add=True)
     
@@ -52,7 +52,7 @@ class Office(models.Model) :
 
 
 class Package(models.Model) :
-    id = models.UUIDField(_("Unique ID"), primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.UUIDField(_("ID"), primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(_("Name"), max_length=50)
     price = models.DecimalField(_('Price'), max_digits=6, decimal_places=2)
     description = models.TextField(_("Description"), null=True)
@@ -65,7 +65,7 @@ class Package(models.Model) :
 
 
 class Account(MPTTModel) :
-    id = models.UUIDField(_("Unique ID"), primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.UUIDField(_("ID"), primary_key=True, default=uuid.uuid4, editable=False)
     member = models.ForeignKey("authentication.CustomUser", verbose_name=_("Member"), related_name="accounts", on_delete=models.CASCADE)
     company_id = models.CharField(_("Company ID"), max_length=50,unique=True)
     package = models.ForeignKey(Package, verbose_name=_("Package"), null=True, on_delete=models.SET_NULL)
@@ -96,7 +96,7 @@ class Account(MPTTModel) :
 
 
 class Subscription(models.Model) :
-    id = models.UUIDField(_("Unique ID"), primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.UUIDField(_("ID"), primary_key=True, default=uuid.uuid4, editable=False)
     office = models.ForeignKey(Office, verbose_name=_("Office Creator"), related_name="subscriptions", null=True, on_delete=models.SET_NULL)
     member_account = models.ForeignKey(Account, verbose_name=_("Member account"), null=True, on_delete=models.CASCADE)
     created_at = models.DateTimeField(_('Created on'), auto_now_add=True)

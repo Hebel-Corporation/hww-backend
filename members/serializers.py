@@ -10,12 +10,18 @@ class CountrySerializer(QueryFieldsMixin, serializers.ModelSerializer):
 
 
 class LocationSerializer(QueryFieldsMixin, serializers.ModelSerializer):
+
+    # country = CountrySerializer(many=False, read_only=True)
+
     class Meta:
         model = Location
         fields = '__all__'
 
 
 class OfficeSerializer(QueryFieldsMixin, serializers.ModelSerializer):
+    location = LocationSerializer(many=False, read_only=True)
+    members_count = serializers.SerializerMethodField()
+    subscription_rate = serializers.SerializerMethodField()
 
     class Meta:
         model = Office
@@ -26,10 +32,20 @@ class OfficeSerializer(QueryFieldsMixin, serializers.ModelSerializer):
             'created_at': {'read_only' : True},
         }
 
-    def create(self, validated_data):
-        office = Office.objects.create(**validated_data)
 
-        return office
+    def get_members_count(self, instance):
+        return instance.subscriptions.count()
+    
+
+    def get_subscription_rate(self, instance):
+        members_count = instance.subscriptions.count()
+        subscriptions_count = Subscription.objects.count()
+        
+        try :
+            percentage = (members_count * 100) / subscriptions_count
+            return round(percentage, 2)
+        except :
+            return 0
 
 
 

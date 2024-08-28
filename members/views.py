@@ -1,12 +1,16 @@
+from django.shortcuts import get_object_or_404
+
 from rest_framework import viewsets, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.exceptions import ValidationError
 from members.models import *
 from .serializers import *
 from authentication.serializers import CustomUserSerializer
 from authentication.models import CustomUser
 from django.contrib.auth.models import Group
+from utils.custom_error_exceptions import UserNotStaffException, UserInvalidGroupException
 
 
 class CountryViewSet(viewsets.ModelViewSet) :
@@ -33,21 +37,26 @@ class OfficeViewSet(viewsets.ModelViewSet) :
         office_data = request.data.get('office')
         staff_data = request.data.get('staff')
 
-
+        location_instance = get_object_or_404(Location, id=office_data['location'])
+        s = OfficeSerializer(data=location_instance)
+        print("location_instance+++++++++++++", location_instance)
+        office_data['office_code'] = "KIN-0033"
+        office_data['location'] = s.data
         office_serializer = OfficeSerializer(data=office_data)
         if not office_serializer.is_valid():
-            return Response(office_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            raise ValidationError(office_serializer.errors)
 
+        staff_data['company_id'] = 'Mdr-093'
         staff_serializer = CustomUserSerializer(data=staff_data)
         if not staff_serializer.is_valid():
-            return Response(staff_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            raise ValidationError(staff_serializer.errors)
         
         if not staff_data.get("user_type")=="staff":
-            return Response({"error:":"L'utilisateur doit etre un staff"}, status=status.HTTP_400_BAD_REQUEST)
+            raise UserNotStaffException()
         
         staff_groups = Group.objects.filter(id__in=staff_data.get("groups"))
         if len(staff_groups) != len(staff_data.get("groups")):
-            return Response({'error': 'Présence d\'un groupe d\'utilisateur invalide.'}, status=status.HTTP_400_BAD_REQUEST)
+            raise UserInvalidGroupException()
         
         staff_data.pop("groups")
 

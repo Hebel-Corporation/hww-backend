@@ -17,7 +17,7 @@ class LocationAdmin(admin.ModelAdmin):
 
 @admin.register(Office)
 class OfficeAdmin(admin.ModelAdmin):
-    list_display = ['id', 'name', 'office_type', 'is_active', 'created_at']
+    list_display = ['id', 'name', 'location', 'office_type', 'is_active', 'created_at']
     
 
 
