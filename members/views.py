@@ -57,7 +57,7 @@ class OfficeViewSet(viewsets.ModelViewSet) :
         staff = CustomUser.objects.create_user(**staff_data)
         staff.groups.set(staff_groups)
         staff.office=office
-        staff.save
+        staff.save()
 
         return Response({"office":office_serializer.data,"staff":CustomUserSerializer(staff).data},
                          status=status.HTTP_201_CREATED)
@@ -82,6 +82,55 @@ class AccountViewSet(viewsets.ModelViewSet) :
     queryset = Account.objects.all()
     serializer_class = AccountSerializer
     permission_classes = [IsAuthenticated]
+
+
+    def get_account_by_company_id(self, request):
+
+        company_id = request.query_params.get('company_id', None)
+
+        if company_id is None:
+            return Response({'error': 'ID de la compangie requis.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            instance = Account.objects.get(company_id=company_id)
+        except Account.DoesNotExist:
+            return Response({'error': 'Le compte associé a l\'ID renseigné n\'a pas été trouvé.'}, status=status.HTTP_404_NOT_FOUND)
+        
+        return instance
+    
+
+    @action(detail=False, methods=['get'])
+    def get_by_company_id(self,request):
+        
+        instance = self.get_account_by_company_id(request=request)
+
+        if type(instance) is Response:
+            return instance
+
+        return Response({"account_id":instance.id},status=status.HTTP_200_OK)
+    
+
+    @action(detail=False, methods=['get'])
+    def sponsor_is_valid(self,request):
+        
+        referral_id = request.query_params.get('referral_id', None)
+
+        instance = self.get_account_by_company_id(request=request)
+        if type(instance) is Response:
+            return instance
+        
+
+        sponsor_account = instance
+
+        if(sponsor_account.get_children().count()>1):
+            return Response({'error': 'Le sponsor a déjà deux downlines.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+
+        referral_account = Account.objects.get(id=referral_id)
+        if not referral_account.get_descendants(include_self=True).filter(id=sponsor_account.id).exists():
+           return Response({'error': 'Le sponsor et le parrain sont dans des réseaux differents.'}, status=status.HTTP_400_BAD_REQUEST) 
+
+        return Response({"sponsor_account_id":sponsor_account.id},status=status.HTTP_200_OK)
 
 
 

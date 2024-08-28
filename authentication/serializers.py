@@ -34,8 +34,10 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, attrs):
         token = super().get_token(attrs)
-
+        
         # Add custom claims
-        token['user'] = CustomUserSerializer(attrs).data
+        # user_data = CustomUserSerializer(attrs).data
+        # print("======>",user_data)
+        # token['user'] = user_data 
 
         return token

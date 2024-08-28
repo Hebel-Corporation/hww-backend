@@ -70,7 +70,7 @@ class Account(MPTTModel) :
     company_id = models.CharField(_("Company ID"), max_length=50,unique=True)
     package = models.ForeignKey(Package, verbose_name=_("Package"), null=True, on_delete=models.SET_NULL)
     referral_account = models.ForeignKey('self', verbose_name=_("Referral account"), null=True, blank=True, on_delete=models.SET_NULL)
-    sponsor_account = TreeForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='children')
+    parent = TreeForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='children')
     rewards = models.ManyToManyField("prices.Reward", verbose_name=_("Account rewards"), blank=True)
     is_active = models.BooleanField(_('Is active'), default=True)
     created_at = models.DateField(_("Date"), auto_now=False, auto_now_add=True)
@@ -91,7 +91,7 @@ class Account(MPTTModel) :
 
 
     def __str__(self) -> str:
-        return self.member.full_name
+        return str(self.member)
     
 
 
