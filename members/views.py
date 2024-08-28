@@ -131,6 +131,41 @@ class AccountViewSet(viewsets.ModelViewSet) :
            return Response({'error': 'Le sponsor et le parrain sont dans des réseaux differents.'}, status=status.HTTP_400_BAD_REQUEST) 
 
         return Response({"sponsor_account_id":sponsor_account.id},status=status.HTTP_200_OK)
+    
+
+    @action(detail=False,methods=['post'])
+    def create_member(self,request):
+
+        member_data = request.data.get('member')
+        sponsor_account_id = request.data.get('sponsor_account')
+        referral_account_id = request.data.get('referral_account')
+        package_id = request.data.get('package')
+
+        member_serialiser = CustomUserSerializer(data=member_data)
+        if not member_serialiser.is_valid():
+            return Response(member_serialiser.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        # member = CustomUser.objects.create_user(**member_data)
+        office = request.user.office
+        # member.office = office
+        # member.save()
+
+
+        sponsor_account = Account.objects.get(id=sponsor_account_id)
+        referral_account = Account.objects.get(id=referral_account_id)
+        package = Package.objects.get(id=package_id)
+
+        # account = Account.objects.create(
+        #     member=member,
+        #     # company_id = "",
+        #     package = package,
+        #     referral_account = referral_account,
+        #     parent = sponsor_account,
+
+        # )
+
+        # return Response({"data":AccountSerializer(account).data},status=status.HTTP_201_CREATED)
+        return Response()
 
 
 

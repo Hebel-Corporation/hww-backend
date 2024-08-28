@@ -5,5 +5,5 @@ from .models import CustomUser
 @admin.register(CustomUser)
 class CustomUserAdmin(UserAdmin,admin.ModelAdmin):
 # class CustomUserAdmin(admin.ModelAdmin):
-    list_display = ['id', 'username', 'first_name', 'last_name','user_type', 'is_active']
+    list_display = ['id', 'username', 'first_name', 'last_name','user_type', 'office']
     # fieldsets = ['id', 'username', 'first_name', 'last_name', 'is_active', 'is_office_admin']

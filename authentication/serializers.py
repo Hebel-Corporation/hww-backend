@@ -37,6 +37,6 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         
         # Add custom claims
         user_data = CustomUserSerializer(attrs).data
-        token['user'] = user_data 
+        # token['user'] = user_data 
 
         return token
