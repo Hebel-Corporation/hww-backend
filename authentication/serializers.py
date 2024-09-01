@@ -3,6 +3,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth.models import Group
 
 from .models import CustomUser
+from members.serializers import OfficeSerializer
 
 
 
@@ -15,17 +16,14 @@ class CustomGroupSerializer(serializers.ModelSerializer):
 
 
 class CustomUserSerializer(serializers.ModelSerializer):
-
-    groups = CustomGroupSerializer(many=True,required=False,read_only=True)
+    office = OfficeSerializer(many=False, read_only=True)
+    groups = CustomGroupSerializer(many=True,required=False, read_only=True)
 
     class Meta:
         model = CustomUser
         fields = ['id', 'username', 'password', 'first_name','last_name', 'company_id', 'phone', 'user_type','office','groups']
         extra_kwargs = {
-            'id': {'read_only' : True},
             'password': {'write_only' : True},
-            'company_id': {'read_only' : True},
-            'created_at': {'read_only' : True},
         }
 
 

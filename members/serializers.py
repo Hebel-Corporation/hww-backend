@@ -11,11 +11,32 @@ class CountrySerializer(QueryFieldsMixin, serializers.ModelSerializer):
 
 class LocationSerializer(QueryFieldsMixin, serializers.ModelSerializer):
 
-    # country = CountrySerializer(many=False, read_only=True)
+    country = CountrySerializer(many=False, read_only=True)
+    offices_count = serializers.SerializerMethodField()
+    subscription_rate = serializers.SerializerMethodField()
 
     class Meta:
         model = Location
         fields = '__all__'
+    
+
+    def get_offices_count(self, instance):
+        return instance.offices.count()
+    
+
+    def get_subscription_rate(self, instance):
+        offices = instance.offices.all()
+        count = 0
+        for office in offices :
+            count += office.subscriptions.count()
+
+        subscriptions_count = Subscription.objects.count()
+        
+        try :
+            percentage = (count * 100) / subscriptions_count
+            return round(percentage, 2)
+        except :
+            return 0
 
 
 class OfficeSerializer(QueryFieldsMixin, serializers.ModelSerializer):
@@ -31,6 +52,7 @@ class OfficeSerializer(QueryFieldsMixin, serializers.ModelSerializer):
             'is_active':{'read_only':True},
             'created_at': {'read_only' : True},
         }
+
 
 
     def get_members_count(self, instance):

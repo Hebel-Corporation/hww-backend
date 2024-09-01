@@ -38,9 +38,9 @@ class Office(models.Model) :
     )
 
     id = models.UUIDField(_("ID"), primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(_("Name"), max_length=50)
-    office_code = models.CharField(_("Office Code"), max_length=50, unique=True)
-    location = models.ForeignKey(Location, on_delete=models.SET_NULL, null=True)
+    name = models.CharField(_("Name"), max_length=50, null=True, blank=True)
+    office_code = models.CharField(_("Office Code"), max_length=50, unique=True, editable=False)
+    location = models.ForeignKey(Location, related_name="offices", on_delete=models.SET_NULL, null=True)
     office_type = models.CharField(_("Office type"), choices=OFFICE_TYPE, default='sub_office', max_length=20)
     is_active = models.BooleanField(_('Is active'), default=True)
     created_at = models.DateField(_("Date"), auto_now=False, auto_now_add=True)
