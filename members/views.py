@@ -50,6 +50,33 @@ class OfficeViewSet(viewsets.ModelViewSet) :
         return Response(data=staff_serializer.data, status=status.HTTP_200_OK)
 
 
+
+    @action(detail=True, methods=['post'], url_path='create-staff')
+    def create_staff(self,request, pk=None):
+        office_instance = self.get_object()
+
+        staff_data = request.data
+        
+        if staff_data.get("user_type") != "staff":
+            raise UserNotStaffException()
+
+        staff_groups = Group.objects.filter(id__in=staff_data.get("groups", []))
+        if len(staff_groups) != len(staff_data.get("groups", [])):
+            raise UserInvalidGroupException()
+
+        # Sérialisation et validation des données du staff
+        staff_serializer = CustomUserSerializer(data=staff_data)
+        staff_serializer.is_valid(raise_exception=True)
+
+        # Création de l'utilisateur staff
+        staff = staff_serializer.save(company_id='009S973')
+        staff.groups.set(staff_groups)
+        staff.office = office_instance
+        staff.save()
+
+        return Response(data=staff_serializer.data, status=status.HTTP_201_CREATED)
+
+
     def create(self, request):
         office_data = request.data.get('office')
         staff_data = request.data.get('staff')
