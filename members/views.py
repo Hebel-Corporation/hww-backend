@@ -166,6 +166,53 @@ class AccountViewSet(viewsets.ModelViewSet) :
 
         # return Response({"data":AccountSerializer(account).data},status=status.HTTP_201_CREATED)
         return Response()
+    
+    @action(detail=False,methods=["get"])
+    def test(self,request):
+
+        import re
+        from enum import Enum
+
+        class IdType(Enum):
+            OFFICE = 1
+            STAFF = 2
+            MEMBER = 3
+            ACCOUNT = 4
+
+        def get_new_company_id(id_type:IdType,office=None,member=None):
+
+            last_instance = None
+            new_company_id =''
+
+            if(id_type==IdType.ACCOUNT):
+                last_instance = Account.objects.filter(member=member).order_by('-created_at').first()
+            else:
+                last_instance = CustomUser.objects.filter(user_type="staff" if id_type==IdType.STAFF else "member").order_by('-date_joined').first()
+            
+            user_initial = "S" if id_type==IdType.STAFF else "M"  
+
+            if last_instance:
+            
+                last_instance_id = int(re.findall(r'[0-9]+',last_instance.company_id.split('-').pop()).pop())
+                
+                if id_type==IdType.ACCOUNT:
+                    new_company_id = member.company_id+"-"+str(last_instance_id+1).zfill(2)
+                else:
+                    new_company_id = office.company_id+"-"+user_initial+str(last_instance_id+1).zfill(5)
+            else:
+
+                if id_type==IdType.ACCOUNT:
+                    new_company_id = member.company_id+"-"+"1".zfill(2)
+                else:
+                    new_company_id = office.company_id+"-"+user_initial+"1".zfill(5)
+
+            return new_company_id
+
+
+        member = CustomUser.objects.filter(user_type="member").first()
+        print("=======>",get_new_company_id(IdType.ACCOUNT,member=member))
+
+        return Response()
 
 
 
