@@ -72,6 +72,7 @@ class Account(MPTTModel) :
     package = models.ForeignKey(Package, verbose_name=_("Package"), null=True, on_delete=models.SET_NULL)
     referral_account = models.ForeignKey('self', verbose_name=_("Referral account"), null=True, blank=True, on_delete=models.SET_NULL)
     sponsor_account = TreeForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='children')
+    office = models.ForeignKey('members.Office', verbose_name=_("Account Office Recorder"), related_name="account_offices_set", blank=True, null=True, on_delete=models.SET_NULL)
     rewards = models.ManyToManyField("prices.Reward", verbose_name=_("Account rewards"), blank=True)
     is_active = models.BooleanField(_('Is active'), default=True)
     created_at = models.DateField(_("Date"), auto_now=False, auto_now_add=True)

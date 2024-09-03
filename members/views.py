@@ -92,8 +92,10 @@ class OfficeViewSet(viewsets.ModelViewSet) :
         try :
             with transaction.atomic():
 
-                referral_account = get_object_or_404(Account, company_id=uplines_data.get('referral_account', None))
-                sponsor_account = get_object_or_404(Account, company_id=uplines_data.get('sponsor_account', None))
+                is_first_node = Account.objects.count() < 1
+
+                referral_account = None if is_first_node else get_object_or_404(Account, company_id=uplines_data.get('referral_account', None))
+                sponsor_account = None if is_first_node else get_object_or_404(Account, company_id=uplines_data.get('sponsor_account', None))
 
                 member_serialiser = CustomUserSerializer(data=member_data)
                 member_serialiser.is_valid(raise_exception=True)
