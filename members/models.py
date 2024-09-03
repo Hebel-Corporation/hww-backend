@@ -55,6 +55,7 @@ class Package(models.Model) :
     id = models.UUIDField(_("ID"), primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(_("Name"), max_length=50)
     price = models.DecimalField(_('Price'), max_digits=6, decimal_places=2)
+    is_default = models.BooleanField(null=True, blank=True, unique=True)
     description = models.TextField(_("Description"), null=True)
     created_at = models.DateField(_("Date"), auto_now=False, auto_now_add=True)
 
