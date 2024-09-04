@@ -4,6 +4,9 @@ from django.utils.translation import gettext as _
 # from django.utils.translation import gettext_lazy as _
 from mptt.models import MPTTModel, TreeForeignKey
 from utils.userful_methods import IdType,get_new_company_id
+from prices.models import Referral
+
+from decimal import Decimal
 
 
 
@@ -95,6 +98,15 @@ class Account(MPTTModel) :
     # def set_parent(self, parent):
     #     self.sponsor_account = parent
 
+    def create_referral_bonus(self):
+
+        if self.referral_account and self.parent:
+            Referral.objects.create(
+            grantee = self.referral_account,
+                downline=self,
+                amount=self.package.price*Decimal('0.2') # 20% du prix du package
+            )
+
 
     def save(self, *args, **kwargs):
         # if self.id is None:
@@ -105,6 +117,8 @@ class Account(MPTTModel) :
         #         self.order_number = 1
 
         self.company_id =  get_new_company_id(id_type=IdType.ACCOUNT,member=self.member)
+
+        self.create_referral_bonus()
 
         super(Account, self).save(*args, **kwargs)
 

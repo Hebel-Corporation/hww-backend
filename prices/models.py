@@ -12,7 +12,7 @@ class Referral(models.Model) :
     created_at = models.DateField(_('Refer date'), auto_now_add=True)
 
     def __str__(self) -> str:
-        return self.grantee.member.full_name
+        return self.grantee.member.first_name +" "+self.grantee.member.last_name
 
 
 
@@ -26,7 +26,7 @@ class Matching(models.Model) :
 
 
     def __str__(self) -> str:
-        return self.grantee.member.full_name
+        return self.grantee.member.first_name +" "+self.grantee.member.last_name
 
 
 
