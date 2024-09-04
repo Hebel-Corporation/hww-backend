@@ -41,12 +41,17 @@ class CustomUser(AbstractUser):
         ('member', 'Member'),
     )
 
-    id = models.UUIDField(_("Unique ID"), primary_key=True, default=uuid.uuid4, editable=False)
-    company_id = models.CharField(_("Company ID"), max_length=50,unique=True)
+    USER_GENDER_TYPE = (
+        ('F', 'Féminin'),
+        ('M', 'Masculin'),
+    )
+
+    id = models.UUIDField(_("ID"), primary_key=True, default=uuid.uuid4, editable=False)
+    company_id = models.CharField(_("Company ID"), max_length=50, unique=True, editable=False)
     phone = models.CharField(max_length=14, blank=True, null=True)
     user_type = models.TextField(max_length=10, choices=USER_TYPE_CHOICES, default='member')
-    office = models.ForeignKey('members.Office', verbose_name=_("Office Recorder"), blank=True, null=True, on_delete=models.SET_NULL)
-    # created_at = models.DateField(_("Date"), auto_now=False, auto_now_add=True)
+    gender = models.TextField(max_length=5, choices=USER_GENDER_TYPE, blank=True, null=True)
+    office = models.ForeignKey('members.Office', verbose_name=_("Office Recorder"), related_name="offices_set", blank=True, null=True, on_delete=models.SET_NULL)
 
     objects = CustomUserManager()
     
