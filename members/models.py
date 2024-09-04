@@ -3,6 +3,7 @@ from django.db import models
 from django.utils.translation import gettext as _
 # from django.utils.translation import gettext_lazy as _
 from mptt.models import MPTTModel, TreeForeignKey
+from utils.userful_methods import IdType,get_new_company_id
 
 
 
@@ -23,6 +24,7 @@ class Location(models.Model) :
     id = models.UUIDField(_("ID"), primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(_("Name"), max_length=50)
     country = models.ForeignKey(Country, verbose_name=_("Location Country"), on_delete=models.CASCADE)
+    code = models.CharField(_("code"), max_length=5, null=True, blank=True)
     created_at = models.DateField(_("Date"), auto_now=False, auto_now_add=True)
     
 
@@ -39,7 +41,7 @@ class Office(models.Model) :
 
     id = models.UUIDField(_("ID"), primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(_("Name"), max_length=50, null=True, blank=True)
-    office_code = models.CharField(_("Office Code"), max_length=50, unique=True, editable=False)
+    company_id = models.CharField(_("Office Code"), max_length=50, unique=True, editable=False)
     location = models.ForeignKey(Location, related_name="offices", on_delete=models.SET_NULL, null=True)
     office_type = models.CharField(_("Office type"), choices=OFFICE_TYPE, default='sub_office', max_length=20)
     is_active = models.BooleanField(_('Is active'), default=True)
@@ -48,6 +50,12 @@ class Office(models.Model) :
 
     def __str__(self) -> str:
         return self.name
+    
+    def save(self, *args, **kwargs):
+
+        self.company_id = get_new_company_id(id_type=IdType.OFFICE,location=self.location)
+
+        super(Office, self).save(*args, **kwargs)
 
 
 
@@ -71,7 +79,7 @@ class Account(MPTTModel) :
     company_id = models.CharField(_("Company ID"), max_length=50,unique=True)
     package = models.ForeignKey(Package, verbose_name=_("Package"), null=True, on_delete=models.SET_NULL)
     referral_account = models.ForeignKey('self', verbose_name=_("Referral account"), null=True, blank=True, on_delete=models.SET_NULL)
-    sponsor_account = TreeForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='children')
+    parent = TreeForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='children')
     office = models.ForeignKey('members.Office', verbose_name=_("Account Office Recorder"), related_name="account_offices_set", blank=True, null=True, on_delete=models.SET_NULL)
     rewards = models.ManyToManyField("prices.Reward", verbose_name=_("Account rewards"), blank=True)
     is_active = models.BooleanField(_('Is active'), default=True)
@@ -81,15 +89,24 @@ class Account(MPTTModel) :
     class MPTTMeta:
         order_insertion_by = ['created_at']
 
+    # def get_parent(self):
+    #     return self.sponsor_account
 
-    # def save(self, *args, **kwargs):
-    #     if self.id is None:
-    #         last_order_number = Account.objects.all().order_by('order_number').last()
-    #         if last_order_number:
-    #             self.order_number = last_order_number.order_number + 1
-    #         else:
-    #             self.order_number = 1
-    #     super(Account, self).save(*args, **kwargs)
+    # def set_parent(self, parent):
+    #     self.sponsor_account = parent
+
+
+    def save(self, *args, **kwargs):
+        # if self.id is None:
+        #     last_order_number = Account.objects.all().order_by('order_number').last()
+        #     if last_order_number:
+        #         self.order_number = last_order_number.order_number + 1
+        #     else:
+        #         self.order_number = 1
+
+        self.company_id =  get_new_company_id(id_type=IdType.ACCOUNT,member=self.member)
+
+        super(Account, self).save(*args, **kwargs)
 
 
     def __str__(self) -> str:

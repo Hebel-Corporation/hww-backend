@@ -69,7 +69,7 @@ class OfficeViewSet(viewsets.ModelViewSet) :
         staff_serializer.is_valid(raise_exception=True)
 
         # Création de l'utilisateur staff
-        staff = staff_serializer.save(company_id='009S973')
+        staff = staff_serializer.save()
         staff.groups.set(staff_groups)
         staff.office = office_instance
         staff.save()
@@ -111,14 +111,13 @@ class OfficeViewSet(viewsets.ModelViewSet) :
                     package = get_object_or_404(Package, id=package_id)
                 else :
                     package = Package.objects.filter(is_default=True).first()
-
+                
                 account = Account.objects.create(
                     member=member,
                     office = office_instance,
-                    company_id = "009M973",
                     package = package,
                     referral_account = referral_account,
-                    sponsor_account = sponsor_account,
+                    parent = sponsor_account,
                 )
                 
         except Exception as e:
@@ -152,10 +151,9 @@ class OfficeViewSet(viewsets.ModelViewSet) :
                 account = Account.objects.create(
                     member=member,
                     office = office_instance,
-                    company_id = "009M973",
                     package = package,
                     referral_account = referral_account,
-                    sponsor_account = sponsor_account,
+                    parent = sponsor_account,
                 )
                 
         except Exception as e:
@@ -180,7 +178,6 @@ class OfficeViewSet(viewsets.ModelViewSet) :
                 
                 # Création du bureau
                 office = office_serializer.save(location=location_instance)
-                office.office_code = "0393"
                 office.save()
 
                 if staff_data.get("user_type") != "staff":
@@ -195,7 +192,7 @@ class OfficeViewSet(viewsets.ModelViewSet) :
                 staff_serializer.is_valid(raise_exception=True)
 
                 # Création de l'utilisateur staff
-                staff = staff_serializer.save(company_id='00973')
+                staff = staff_serializer.save()
                 staff.groups.set(staff_groups)
                 staff.office = office
                 staff.save()
@@ -228,138 +225,8 @@ class PackageViewSet(viewsets.ModelViewSet) :
 class AccountViewSet(viewsets.ModelViewSet) :
     queryset = Account.objects.all()
     serializer_class = AccountSerializer
-    permission_classes = [IsAuthenticated]
-
-
-    def get_account_by_company_id(self, request):
-
-        company_id = request.query_params.get('company_id', None)
-
-        if company_id is None:
-            return Response({'error': 'ID de la compangie requis.'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        try:
-            instance = Account.objects.get(company_id=company_id)
-        except Account.DoesNotExist:
-            return Response({'error': 'Le compte associé a l\'ID renseigné n\'a pas été trouvé.'}, status=status.HTTP_404_NOT_FOUND)
-        
-        return instance
-    
-
-    @action(detail=False, methods=['get'])
-    def get_by_company_id(self,request):
-        
-        instance = self.get_account_by_company_id(request=request)
-
-        if type(instance) is Response:
-            return instance
-
-        return Response({"account_id":instance.id},status=status.HTTP_200_OK)
-    
-
-    @action(detail=False, methods=['get'])
-    def sponsor_is_valid(self,request):
-        
-        referral_id = request.query_params.get('referral_id', None)
-
-        instance = self.get_account_by_company_id(request=request)
-        if type(instance) is Response:
-            return instance
-        
-
-        sponsor_account = instance
-
-        if(sponsor_account.get_children().count()>1):
-            return Response({'error': 'Le sponsor a déjà deux downlines.'}, status=status.HTTP_400_BAD_REQUEST)
-        
-
-        referral_account = Account.objects.get(id=referral_id)
-        if not referral_account.get_descendants(include_self=True).filter(id=sponsor_account.id).exists():
-           return Response({'error': 'Le sponsor et le parrain sont dans des réseaux differents.'}, status=status.HTTP_400_BAD_REQUEST) 
-
-        return Response({"sponsor_account_id":sponsor_account.id},status=status.HTTP_200_OK)
-    
-
-    @action(detail=False,methods=['post'])
-    def create_member(self,request):
-
-        member_data = request.data.get('member')
-        sponsor_account_id = request.data.get('sponsor_account')
-        referral_account_id = request.data.get('referral_account')
-        package_id = request.data.get('package')
-
-        member_serialiser = CustomUserSerializer(data=member_data)
-        if not member_serialiser.is_valid():
-            return Response(member_serialiser.errors, status=status.HTTP_400_BAD_REQUEST)
-        
-        # member = CustomUser.objects.create_user(**member_data)
-        office = request.user.office
-        # member.office = office
-        # member.save()
-
-
-        sponsor_account = Account.objects.get(id=sponsor_account_id)
-        referral_account = Account.objects.get(id=referral_account_id)
-        package = Package.objects.get(id=package_id)
-
-        # account = Account.objects.create(
-        #     member=member,
-        #     # company_id = "",
-        #     package = package,
-        #     referral_account = referral_account,
-        #     parent = sponsor_account,
-
-        # )
-
-        # return Response({"data":AccountSerializer(account).data},status=status.HTTP_201_CREATED)
-        return Response()
-    
-    @action(detail=False,methods=["get"])
-    def test(self,request):
-
-        import re
-        from enum import Enum
-
-        class IdType(Enum):
-            OFFICE = 1
-            STAFF = 2
-            MEMBER = 3
-            ACCOUNT = 4
-
-        def get_new_company_id(id_type:IdType,office=None,member=None):
-
-            last_instance = None
-            new_company_id =''
-
-            if(id_type==IdType.ACCOUNT):
-                last_instance = Account.objects.filter(member=member).order_by('-created_at').first()
-            else:
-                last_instance = CustomUser.objects.filter(user_type="staff" if id_type==IdType.STAFF else "member").order_by('-date_joined').first()
-            
-            user_initial = "S" if id_type==IdType.STAFF else "M"  
-
-            if last_instance:
-            
-                last_instance_id = int(re.findall(r'[0-9]+',last_instance.company_id.split('-').pop()).pop())
-                
-                if id_type==IdType.ACCOUNT:
-                    new_company_id = member.company_id+"-"+str(last_instance_id+1).zfill(2)
-                else:
-                    new_company_id = office.company_id+"-"+user_initial+str(last_instance_id+1).zfill(5)
-            else:
-
-                if id_type==IdType.ACCOUNT:
-                    new_company_id = member.company_id+"-"+"1".zfill(2)
-                else:
-                    new_company_id = office.company_id+"-"+user_initial+"1".zfill(5)
-
-            return new_company_id
-
-
-        member = CustomUser.objects.filter(user_type="member").first()
-        print("=======>",get_new_company_id(IdType.ACCOUNT,member=member))
-
-        return Response()
+    permission_classes = [IsAuthenticated]    
+ 
     @action(detail=False, methods=['post'], url_path='check-uplines-validity')
     def check_uplines_validity(self,request):
         api_data = request.data

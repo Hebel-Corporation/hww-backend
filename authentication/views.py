@@ -19,7 +19,7 @@ class CustomGroupViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         group_queryset = super().get_queryset()
-        return group_queryset.exclude(name='membre')
+        return group_queryset.exclude(name='member')
     
 
 class CustomUserViewSet(viewsets.ModelViewSet):

@@ -11,13 +11,13 @@ class CountryAdmin(admin.ModelAdmin):
 
 @admin.register(Location)
 class LocationAdmin(admin.ModelAdmin):
-    list_display = ['id', 'name', 'country', 'created_at']
+    list_display = ['id', 'name', 'country','code', 'created_at']
 
 
 
 @admin.register(Office)
 class OfficeAdmin(admin.ModelAdmin):
-    list_display = ['id', 'name', 'location', 'office_type', 'is_active', 'created_at']
+    list_display = ['id', 'name', 'location', 'office_type','company_id', 'is_active', 'created_at']
     
 
 
