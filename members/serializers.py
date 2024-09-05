@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from drf_queryfields import QueryFieldsMixin
 from members.models import *
+from utils.userful_methods import on_account_save, on_office_save
 
 
 class CountrySerializer(QueryFieldsMixin, serializers.ModelSerializer):
@@ -54,6 +55,13 @@ class OfficeSerializer(QueryFieldsMixin, serializers.ModelSerializer):
         }
 
 
+    def save(self, **kwargs):
+
+        on_office_save(self.instance)
+
+        return super().save(**kwargs)
+
+
 
     def get_members_count(self, instance):
         return instance.subscriptions.count()
@@ -83,6 +91,12 @@ class AccountSerializer(QueryFieldsMixin, serializers.ModelSerializer):
         model = Account
         fields = '__all__'
         depth = 1
+
+    def save(self, **kwargs):
+
+        on_account_save(self.instance)
+
+        return super().save(**kwargs)
 
     # children = serializers.SerializerMethodField()
 

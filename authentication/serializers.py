@@ -4,6 +4,7 @@ from django.contrib.auth.models import Group
 
 from .models import CustomUser
 from members.serializers import OfficeSerializer
+from utils.userful_methods import on_user_save
 
 
 
@@ -25,6 +26,12 @@ class CustomUserSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'password': {'write_only' : True},
         }
+
+    def save(self, **kwargs):
+
+        on_user_save(self.instance)
+
+        return super().save(**kwargs)
 
 
 

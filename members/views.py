@@ -11,6 +11,7 @@ from authentication.serializers import CustomUserSerializer, CustomGroupSerializ
 from authentication.models import CustomUser
 from django.contrib.auth.models import Group
 from utils.custom_error_exceptions import UserNotStaffException, UserInvalidGroupException
+from utils.userful_methods import create_pairing_bonuses
 
 
 class CountryViewSet(viewsets.ModelViewSet) :
@@ -209,7 +210,10 @@ class OfficeViewSet(viewsets.ModelViewSet) :
     
     
     @action(detail=False, methods=['post'], url_path='assign_staff')
-    def assign_staff():
+    def assign_staff(self,request):
+
+        test_obj = Account.objects.get(company_id='BN002-M00004-01')
+        create_pairing_bonuses(upline=test_obj,position='right')
 
         return Response()
 

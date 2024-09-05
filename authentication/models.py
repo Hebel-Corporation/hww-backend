@@ -3,7 +3,7 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.base_user import BaseUserManager
 from django.utils.translation import gettext as _
-from utils.userful_methods import IdType,get_new_company_id
+from utils.userful_methods import on_user_save
 
 
 class CustomUserManager(BaseUserManager):
@@ -60,7 +60,7 @@ class CustomUser(AbstractUser):
         return f"{self.first_name} {self.last_name}"
     
     def save(self, *args, **kwargs):
-
-        self.company_id = get_new_company_id(id_type=IdType.STAFF if self.user_type=="staff" else IdType.MEMBER ,office=self.office)
+        
+        on_user_save(self)
         
         super(CustomUser, self).save(*args, **kwargs)

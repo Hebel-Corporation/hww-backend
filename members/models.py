@@ -3,7 +3,7 @@ from django.db import models
 from django.utils.translation import gettext as _
 # from django.utils.translation import gettext_lazy as _
 from mptt.models import MPTTModel, TreeForeignKey
-from utils.userful_methods import IdType,get_new_company_id
+from utils.userful_methods import on_account_save, on_office_save
 from prices.models import Referral
 
 from decimal import Decimal
@@ -56,7 +56,7 @@ class Office(models.Model) :
     
     def save(self, *args, **kwargs):
 
-        self.company_id = get_new_company_id(id_type=IdType.OFFICE,location=self.location)
+        on_office_save(self)
 
         super(Office, self).save(*args, **kwargs)
 
@@ -77,12 +77,18 @@ class Package(models.Model) :
 
 
 class Account(MPTTModel) :
+
+    POSITION = (
+        ('left', 'Left'),
+        ('right', 'Right')
+    )
     id = models.UUIDField(_("ID"), primary_key=True, default=uuid.uuid4, editable=False)
     member = models.ForeignKey("authentication.CustomUser", verbose_name=_("Member"), related_name="accounts", on_delete=models.CASCADE)
-    company_id = models.CharField(_("Company ID"), max_length=50,unique=True)
+    company_id = models.CharField(_("Company ID"), max_length=50,unique=True,editable=False)
     package = models.ForeignKey(Package, verbose_name=_("Package"), null=True, on_delete=models.SET_NULL)
     referral_account = models.ForeignKey('self', verbose_name=_("Referral account"), null=True, blank=True, on_delete=models.SET_NULL)
-    parent = TreeForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='children')
+    parent = TreeForeignKey('self',verbose_name=_("Sponsor account"), on_delete=models.CASCADE, null=True, blank=True, related_name='children')
+    position = models.CharField(_("Position at Sponsor"), choices=POSITION, default='left', max_length=10,editable=False)
     office = models.ForeignKey('members.Office', verbose_name=_("Account Office Recorder"), related_name="account_offices_set", blank=True, null=True, on_delete=models.SET_NULL)
     rewards = models.ManyToManyField("prices.Reward", verbose_name=_("Account rewards"), blank=True)
     is_active = models.BooleanField(_('Is active'), default=True)
@@ -109,22 +115,16 @@ class Account(MPTTModel) :
 
 
     def save(self, *args, **kwargs):
-        # if self.id is None:
-        #     last_order_number = Account.objects.all().order_by('order_number').last()
-        #     if last_order_number:
-        #         self.order_number = last_order_number.order_number + 1
-        #     else:
-        #         self.order_number = 1
 
-        self.company_id =  get_new_company_id(id_type=IdType.ACCOUNT,member=self.member)
+        on_account_save(self)
 
-        self.create_referral_bonus()
+            # self.create_referral_bonus()
 
         super(Account, self).save(*args, **kwargs)
 
 
     def __str__(self) -> str:
-        return str(self.member)
+        return str(self.company_id)
     
 
 
