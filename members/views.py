@@ -233,7 +233,7 @@ class AccountViewSet(viewsets.ModelViewSet) :
 
     @action(detail=False, methods=['get'], url_path='is-first-node')
     def is_first_node(self,request, pk=None):
-
+        
         return Response(data={
             "is_first_node": Account.objects.count() < 1
         }, status=status.HTTP_200_OK)
