@@ -85,8 +85,8 @@ class OfficeViewSet(viewsets.ModelViewSet) :
         office_instance = self.get_object()
 
         api_data = request.data
-        member_data = api_data.get('member')
-        uplines_data = api_data.get('uplines')
+        member_data = api_data.get('member', None)
+        uplines_data = api_data.get('uplines', None)
         package_id = api_data.get('package', None)
 
         try :
@@ -231,9 +231,22 @@ class AccountViewSet(viewsets.ModelViewSet) :
     permission_classes = [IsAuthenticated]
 
 
+    @action(detail=False, methods=['get'], url_path='is-first-node')
+    def is_first_node(self,request, pk=None):
+
+        return Response(data={
+            "is_first_node": Account.objects.count() < 1
+        }, status=status.HTTP_200_OK)
+
+
     @action(detail=False, methods=['post'], url_path='check-uplines-validity')
     def check_uplines_validity(self,request):
         api_data = request.data
+
+        if Account.objects.count() < 1 :
+            return Response(data={
+                    "is_valid": True
+                }, status=status.HTTP_200_OK)
 
         try :
             referral_account = Account.objects.get(company_id=api_data.get('referral_account', None))
@@ -246,14 +259,14 @@ class AccountViewSet(viewsets.ModelViewSet) :
                         "is_valid" : False,
                         "error_type": "sponsor_id",
                         "message": "Ce sponsor n'est pas dans le même réseau que le parrain spécifier."
-                    }, status=status.HTTP_400_BAD_REQUEST)
+                    }, status=status.HTTP_202_ACCEPTED)
                 
                 if sponsor_account.get_descendant_count() >= 2 :
                     return Response(data={
                         "is_valid" : False,
                         "error_type": "sponsor_id",
                         "message": "Ce sponsor a déjà atteinds le nombre maximal des enfants direct."
-                    }, status=status.HTTP_400_BAD_REQUEST)
+                    }, status=status.HTTP_202_ACCEPTED)
                 else :
                     return Response(data={
                         "is_valid": True
@@ -264,14 +277,14 @@ class AccountViewSet(viewsets.ModelViewSet) :
                     "is_valid" : False,
                     "error_type": "sponsor_id",
                     "message": "Ce sponsor n'existe pas dans aucun réseau de la plateforme."
-                }, status=status.HTTP_400_BAD_REQUEST)
+                }, status=status.HTTP_202_ACCEPTED)
             
         except Account.DoesNotExist :
             return Response(data={
                     "is_valid" : False,
                     "error_type": "parrain_id",
                     "message": "Ce parrain n'existe pas dans la plateforme."
-                }, status=status.HTTP_400_BAD_REQUEST)
+                }, status=status.HTTP_202_ACCEPTED)
 
 
 
