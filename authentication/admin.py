@@ -3,7 +3,19 @@ from django.contrib.auth.admin import UserAdmin
 from .models import CustomUser
 
 @admin.register(CustomUser)
-# class CustomUserAdmin(UserAdmin,admin.ModelAdmin):
-class CustomUserAdmin(admin.ModelAdmin):
-    list_display = ['id', 'company_id', 'username', 'user_type', 'first_name', 'last_name', 'is_active']
-    # fieldsets = ['id', 'username', 'first_name', 'last_name', 'is_active', 'is_office_admin']
+class CustomUserAdmin(UserAdmin):
+    fieldsets = (
+        (None, {'fields': ('username', 'password', 'last_login')}),
+        ('Personal info', {'fields': ('first_name', 'last_name', 'gender', 'email', 'phone', 'office')}),
+        ('Permissions', {'fields': ('user_type', 'is_active', 'is_staff', 'is_superuser')}),
+        (None, {'fields': ('date_joined',)}),
+    )
+    add_fieldsets = (
+        (None, {
+            'classes': ('wide',),
+            'fields': ('username', 'password1', 'password2'),
+        }),
+    )
+    list_display = ('username', 'company_id', 'email', 'user_type', 'first_name', 'last_name', 'is_active', 'is_staff')
+    search_fields = ('username', 'email')
+    ordering = ('date_joined',)
