@@ -69,7 +69,9 @@ class OfficeViewSet(viewsets.ModelViewSet) :
         staff_serializer.is_valid(raise_exception=True)
 
         # Création de l'utilisateur staff
-        staff = staff_serializer.save(company_id='009S973')
+        last_staff_instance = CustomUser.objects.filter(user_type='staff').order_by('-date_joined').first()
+        staff_id = last_staff_instance.company_id.split('-').pop()
+        staff = staff_serializer.save(company_id=f"{'-'.join(last_staff_instance.company_id.split('-')[:-1])}-S0{int(staff_id[1:])+1}")
         staff.groups.set(staff_groups)
         staff.office = office_instance
         staff.save()
@@ -100,7 +102,12 @@ class OfficeViewSet(viewsets.ModelViewSet) :
                 member_serialiser = CustomUserSerializer(data=member_data)
                 member_serialiser.is_valid(raise_exception=True)
 
-                member = member_serialiser.save()
+                member_id = f"HWW-{office_instance.office_code}-M0{CustomUser.objects.filter(user_type='member').count()+1}"
+                member = member_serialiser.save(
+                    company_id = member_id,
+                    username = member_id,
+                    password='1234'
+                )
                 member_group = Group.objects.get(name='member')
                 member.groups.set(member_group)
                 member.office = office_instance
@@ -115,7 +122,7 @@ class OfficeViewSet(viewsets.ModelViewSet) :
                 account = Account.objects.create(
                     member=member,
                     office = office_instance,
-                    company_id = "009M973",
+                    company_id = f"{member.company_id}-ACC0{1}",
                     package = package,
                     referral_account = referral_account,
                     sponsor_account = sponsor_account,
@@ -152,7 +159,7 @@ class OfficeViewSet(viewsets.ModelViewSet) :
                 account = Account.objects.create(
                     member=member,
                     office = office_instance,
-                    company_id = "009M973",
+                    company_id = f"{member.company_id}-ACC0{member.accounts.count()+1}",
                     package = package,
                     referral_account = referral_account,
                     sponsor_account = sponsor_account,
@@ -174,14 +181,13 @@ class OfficeViewSet(viewsets.ModelViewSet) :
 
         try:
             with transaction.atomic():
-                # Sérialisation et validation des données du bureau
-                office_serializer = OfficeSerializer(data=office_data)
-                office_serializer.is_valid(raise_exception=True)
                 
                 # Création du bureau
-                office = office_serializer.save(location=location_instance)
-                office.office_code = "0393"
-                office.save()
+                office = Office.objects.create(
+                    name=office_data.get('name', ''),
+                    location=location_instance,
+                    office_code= f'{location_instance.name[:3].upper()}0{Office.objects.filter(location=location_instance).count()+1}'
+                )
 
                 if staff_data.get("user_type") != "staff":
                     raise UserNotStaffException()
@@ -195,7 +201,8 @@ class OfficeViewSet(viewsets.ModelViewSet) :
                 staff_serializer.is_valid(raise_exception=True)
 
                 # Création de l'utilisateur staff
-                staff = staff_serializer.save(company_id='00973')
+                staff_count = CustomUser.objects.filter(user_type="staff").count()
+                staff = staff_serializer.save(company_id=f"HWW-{office.office_code}-S0{staff_count+1}")
                 staff.groups.set(staff_groups)
                 staff.office = office
                 staff.save()

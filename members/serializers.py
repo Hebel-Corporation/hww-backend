@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from drf_queryfields import QueryFieldsMixin
 from members.models import *
+from utils.userful_methods import on_account_save, on_office_save, get_new_company_id
 
 
 class CountrySerializer(QueryFieldsMixin, serializers.ModelSerializer):
@@ -83,6 +84,13 @@ class AccountSerializer(QueryFieldsMixin, serializers.ModelSerializer):
         model = Account
         fields = '__all__'
         depth = 1
+
+
+    def save(self, **kwargs):
+
+        on_account_save(self.instance)
+
+        return super().save(**kwargs)
 
     # children = serializers.SerializerMethodField()
 
