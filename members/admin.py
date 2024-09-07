@@ -17,7 +17,7 @@ class LocationAdmin(admin.ModelAdmin):
 
 @admin.register(Office)
 class OfficeAdmin(admin.ModelAdmin):
-    list_display = ['id', 'name', 'location', 'office_type', 'is_active', 'created_at']
+    list_display = ['id', 'office_code', 'name', 'location', 'office_type', 'is_active', 'created_at']
     
 
 
@@ -31,12 +31,12 @@ class PackageAdmin(admin.ModelAdmin):
 @admin.register(Account)
 class AccountAdmin(admin.ModelAdmin):
     mptt_indent_field = "id"
-    list_display = ['id', 'member', 'package', 'referral_account', 'sponsor_account', 'is_active', 'created_at']
+    list_display = ['id', 'member', 'package', 'referral_account', 'parent', 'is_active', 'created_at']
 
 
 
 @admin.register(Subscription)
-class SubscriptionAdmin(MPTTModelAdmin):
+class SubscriptionAdmin(admin.ModelAdmin):
     list_display = ['id', 'office', 'member_account', 'created_at']
 
 

@@ -15,6 +15,13 @@ class Country(models.Model) :
     name = models.CharField(_("Name"), max_length=100)
     code = models.CharField(_("code"), max_length=5, null=True, blank=True)
     created_at = models.DateField(_("Date"), auto_now=False, auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Country"
+        verbose_name_plural = "Countries"
+        ordering = ['created_at']  # Default ordering of query results
+        #db_table = 'my_custom_model_table'  # Custom table name in the database
+        #unique_together = ['name', 'code']  # Ensure (name, code) pairs are unique
     
 
     def __str__(self) -> str:
@@ -80,7 +87,7 @@ class Account(MPTTModel) :
     company_id = models.CharField(_("Company ID"), max_length=50,unique=True)
     package = models.ForeignKey(Package, verbose_name=_("Package"), null=True, on_delete=models.SET_NULL)
     referral_account = models.ForeignKey('self', verbose_name=_("Referral account"), null=True, blank=True, on_delete=models.SET_NULL)
-    sponsor_account = TreeForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='children')
+    parent = TreeForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='children')
     position = models.CharField(_("Position at Sponsor"), choices=POSITION, default='left', max_length=10,editable=False)
     office = models.ForeignKey('members.Office', verbose_name=_("Account Office Recorder"), related_name="account_offices_set", blank=True, null=True, on_delete=models.SET_NULL)
     rewards = models.ManyToManyField("prices.Reward", verbose_name=_("Account rewards"), blank=True)
@@ -104,7 +111,7 @@ class Account(MPTTModel) :
 
     def create_referral_bonus(self):
 
-        if self.referral_account and self.sponsor_account:
+        if self.referral_account and self.parent:
             Referral.objects.create(
             grantee = self.referral_account,
                 downline=self,

@@ -99,17 +99,15 @@ class OfficeViewSet(viewsets.ModelViewSet) :
                 referral_account = None if is_first_node else get_object_or_404(Account, company_id=uplines_data.get('referral_account', None))
                 sponsor_account = None if is_first_node else get_object_or_404(Account, company_id=uplines_data.get('sponsor_account', None))
 
+                member_id = f"HWW-{office_instance.office_code}-M0{CustomUser.objects.filter(user_type='member').count()+1}"
+                member_data['username'] = ''.join(member_id.split('-'))
+                member_data['password'] = "1234"
                 member_serialiser = CustomUserSerializer(data=member_data)
                 member_serialiser.is_valid(raise_exception=True)
 
-                member_id = f"HWW-{office_instance.office_code}-M0{CustomUser.objects.filter(user_type='member').count()+1}"
-                member = member_serialiser.save(
-                    company_id = member_id,
-                    username = member_id,
-                    password='1234'
-                )
-                member_group = Group.objects.get(name='member')
-                member.groups.set(member_group)
+                member = member_serialiser.save(company_id=member_id)
+                member_group = Group.objects.get(name='membre')
+                member.groups.set([member_group])
                 member.office = office_instance
                 member.save()
 
@@ -125,7 +123,7 @@ class OfficeViewSet(viewsets.ModelViewSet) :
                     company_id = f"{member.company_id}-ACC0{1}",
                     package = package,
                     referral_account = referral_account,
-                    sponsor_account = sponsor_account,
+                    parent = sponsor_account,
                 )
                 
         except Exception as e:
@@ -162,7 +160,7 @@ class OfficeViewSet(viewsets.ModelViewSet) :
                     company_id = f"{member.company_id}-ACC0{member.accounts.count()+1}",
                     package = package,
                     referral_account = referral_account,
-                    sponsor_account = sponsor_account,
+                    parent = sponsor_account,
                 )
                 
         except Exception as e:

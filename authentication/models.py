@@ -14,7 +14,7 @@ class CustomUserManager(BaseUserManager):
         
         user = self.model(username=username, **extra_fields)
         user.set_password(password)
-        user.save()
+        user.save(using=self._db)
 
         return user
     
@@ -25,18 +25,23 @@ class CustomUserManager(BaseUserManager):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
         extra_fields.setdefault('is_active', True)
-        extra_fields.setdefault('user_type', 'staff')
+        extra_fields.setdefault('user_type', 'admin')
+        admin_count = self.model.objects.filter(user_type='admin').count()
+        extra_fields.setdefault('company_id', f'HWW-SU0{admin_count+1}')
 
         if extra_fields.get('is_staff') is not True:
             raise ValueError(_('Superuser must have is_staff=True.'))
         if extra_fields.get('is_superuser') is not True:
             raise ValueError(_('Superuser must have is_superuser=True.'))
         
-#         return self.create_user(username, password, **extra_fields)
+        return self.create_user(username, password, **extra_fields)
+    
+    
     
 class CustomUser(AbstractUser):
 
     USER_TYPE_CHOICES = (
+        ('admin', 'Administrator'),
         ('staff', 'Staff'),
         ('member', 'Member'),
     )
