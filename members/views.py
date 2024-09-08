@@ -73,6 +73,7 @@ class OfficeViewSet(viewsets.ModelViewSet) :
         staff_id = last_staff_instance.company_id.split('-').pop()
         staff = staff_serializer.save(company_id=f"{'-'.join(last_staff_instance.company_id.split('-')[:-1])}-S0{int(staff_id[1:])+1}")
         staff.groups.set(staff_groups)
+        staff.set_password(staff_data.get('password'))
         staff.office = office_instance
         staff.save()
 
@@ -101,13 +102,14 @@ class OfficeViewSet(viewsets.ModelViewSet) :
 
                 member_id = f"HWW-{office_instance.office_code}-M0{CustomUser.objects.filter(user_type='member').count()+1}"
                 member_data['username'] = ''.join(member_id.split('-'))
-                member_data['password'] = "1234"
+                # member_data['password'] = "1234"
                 member_serialiser = CustomUserSerializer(data=member_data)
                 member_serialiser.is_valid(raise_exception=True)
 
                 member = member_serialiser.save(company_id=member_id)
                 member_group = Group.objects.get(name='membre')
                 member.groups.set([member_group])
+                member.set_password("1234")
                 member.office = office_instance
                 member.save()
 
@@ -202,6 +204,7 @@ class OfficeViewSet(viewsets.ModelViewSet) :
                 staff_count = CustomUser.objects.filter(user_type="staff").count()
                 staff = staff_serializer.save(company_id=f"HWW-{office.office_code}-S0{staff_count+1}")
                 staff.groups.set(staff_groups)
+                staff.set_password(staff_data.get('password'))
                 staff.office = office
                 staff.save()
 
