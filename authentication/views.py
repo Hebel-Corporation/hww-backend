@@ -1,4 +1,4 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework_simplejwt.views import TokenObtainPairView
@@ -21,6 +21,7 @@ class CustomGroupViewSet(viewsets.ModelViewSet):
         group_queryset = super().get_queryset()
         return group_queryset.exclude(name='membre')
     
+    
 
 class CustomUserViewSet(viewsets.ModelViewSet):
     queryset= CustomUser.objects.all()
@@ -28,16 +29,11 @@ class CustomUserViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
 
-    @action(detail=False, methods=['post'], url_path='staff/create')
-    def create_member():
-        
+    @action(detail=False, methods=['get'], url_path='all')
+    def members(self,request):
+        member_queryset = CustomUser.objects.filter(user_type='member')
+        member_serializer = CustomUserSerializer(member_queryset, many=True)
 
-        return Response()
-    
-
-    @action(detail=False, methods=['post'], url_path='member/create')
-    def create_member():
-
-        return Response()
+        return Response(data=member_serializer.data, status=status.HTTP_200_OK)
 
 

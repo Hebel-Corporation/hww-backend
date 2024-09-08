@@ -18,13 +18,23 @@ class CustomGroupSerializer(serializers.ModelSerializer):
 class CustomUserSerializer(serializers.ModelSerializer):
     office = OfficeSerializer(many=False, read_only=True)
     groups = CustomGroupSerializer(many=True,required=False, read_only=True)
+    downline_count = serializers.SerializerMethodField()
 
     class Meta:
         model = CustomUser
-        fields = ['id', 'username', 'password', 'first_name','last_name', 'gender', 'company_id', 'phone', 'user_type','office','groups']
+        fields = ['id', 'username', 'password', 'first_name','last_name', 'gender', 'downline_count', 'company_id', 'phone', 'user_type','office','groups']
         extra_kwargs = {
             'password': {'write_only' : True},
         }
+
+    
+    def get_downline_count(self, instance):
+        count = 0
+        member_accounts = instance.accounts.all()
+        for account in member_accounts :
+            count += account.get_descendant_count()
+
+        return count
 
 
 

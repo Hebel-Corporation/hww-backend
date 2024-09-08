@@ -102,7 +102,7 @@ class OfficeViewSet(viewsets.ModelViewSet) :
 
                 member_id = f"HWW-{office_instance.office_code}-M0{CustomUser.objects.filter(user_type='member').count()+1}"
                 member_data['username'] = ''.join(member_id.split('-'))
-                # member_data['password'] = "1234"
+                member_data['password'] = "1234"
                 member_serialiser = CustomUserSerializer(data=member_data)
                 member_serialiser.is_valid(raise_exception=True)
 
