@@ -11,7 +11,7 @@ from authentication.serializers import CustomUserSerializer, CustomGroupSerializ
 from authentication.models import CustomUser
 from django.contrib.auth.models import Group
 from utils.custom_error_exceptions import UserNotStaffException, UserInvalidGroupException
-from utils.userful_methods import create_pairing_bonuses
+import traceback
 
 
 class CountryViewSet(viewsets.ModelViewSet) :
@@ -70,9 +70,8 @@ class OfficeViewSet(viewsets.ModelViewSet) :
         staff_serializer.is_valid(raise_exception=True)
 
         # Création de l'utilisateur staff
-        staff = staff_serializer.save()
+        staff = staff_serializer.save(office=office_instance)
         staff.groups.set(staff_groups)
-        staff.office = office_instance
         staff.save()
 
         return Response(data=staff_serializer.data, status=status.HTTP_201_CREATED)
@@ -101,10 +100,11 @@ class OfficeViewSet(viewsets.ModelViewSet) :
                 member_serialiser = CustomUserSerializer(data=member_data)
                 member_serialiser.is_valid(raise_exception=True)
 
-                member = member_serialiser.save()
+                member = member_serialiser.save(office=office_instance)
                 member_group = Group.objects.get(name='member')
-                member.groups.set(member_group)
-                member.office = office_instance
+                member_group.user_set.add(member)
+                # member.groups.set(member_group)
+                # member.office = office_instance
                 member.save()
 
                 package = None
@@ -122,6 +122,9 @@ class OfficeViewSet(viewsets.ModelViewSet) :
                 )
                 
         except Exception as e:
+
+            traceback.print_exc()
+
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         
         return Response(data=member_serialiser.data,status=status.HTTP_201_CREATED)
@@ -179,7 +182,7 @@ class OfficeViewSet(viewsets.ModelViewSet) :
                 
                 # Création du bureau
                 office = office_serializer.save(location=location_instance)
-                office.save()
+                office.save() #why ???
 
                 if staff_data.get("user_type") != "staff":
                     raise UserNotStaffException()
@@ -193,12 +196,13 @@ class OfficeViewSet(viewsets.ModelViewSet) :
                 staff_serializer.is_valid(raise_exception=True)
 
                 # Création de l'utilisateur staff
-                staff = staff_serializer.save()
+                staff = staff_serializer.save(office=office)
                 staff.groups.set(staff_groups)
-                staff.office = office
+                # staff.office = office
                 staff.save()
 
         except Exception as e:
+            # traceback.print_exc()
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response({
@@ -209,11 +213,13 @@ class OfficeViewSet(viewsets.ModelViewSet) :
     
     
     
+    # Use for tests =====>
     @action(detail=False, methods=['post'], url_path='assign_staff')
     def assign_staff(self,request):
 
-        test_obj = Account.objects.get(company_id='BN002-M00004-01')
-        create_pairing_bonuses(upline=test_obj,position='right')
+        # test_obj = Account.objects.get(company_id='BN002-M00004-01')
+        # create_pairing_bonuses(upline=test_obj,position='right')
+        # Sérialisation et validation des données du bureau
 
         return Response()
 
@@ -248,7 +254,8 @@ class AccountViewSet(viewsets.ModelViewSet) :
                         "message": "Ce sponsor n'est pas dans le même réseau que le parrain spécifier."
                     }, status=status.HTTP_400_BAD_REQUEST)
                 
-                if sponsor_account.get_descendant_count() >= 2 :
+                # if sponsor_account.get_descendant_count() >= 2 :
+                if sponsor_account.get_children().count() >= 2 :
                     return Response(data={
                         "is_valid" : False,
                         "error_type": "sponsor_id",

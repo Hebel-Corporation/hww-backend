@@ -55,11 +55,14 @@ class OfficeSerializer(QueryFieldsMixin, serializers.ModelSerializer):
         }
 
 
-    def save(self, **kwargs):
+    # def save(self, **kwargs):
+    #     instance = super().save(**kwargs)
+    #     # instance.save()
+    #     return instance
+    
+    def create(self, validated_data):
 
-        on_office_save(self.instance)
-
-        return super().save(**kwargs)
+        return super().create(validated_data)
 
 
 
@@ -92,11 +95,11 @@ class AccountSerializer(QueryFieldsMixin, serializers.ModelSerializer):
         fields = '__all__'
         depth = 1
 
-    def save(self, **kwargs):
+    # def save(self, **kwargs):
 
-        on_account_save(self.instance)
+    #     on_account_save(self.instance)
 
-        return super().save(**kwargs)
+    #     return super().save(**kwargs)
 
     # children = serializers.SerializerMethodField()
 

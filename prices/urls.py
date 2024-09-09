@@ -4,6 +4,7 @@ from .views import *
 
 router = DefaultRouter()
 router.register('referrals', ReferralViewSet, basename="referrals")
+router.register('matchings', MatchingViewSet, basename="matchings")
 
 
 urlpatterns = [

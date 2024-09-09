@@ -27,11 +27,12 @@ class CustomUserSerializer(serializers.ModelSerializer):
             'password': {'write_only' : True},
         }
 
-    def save(self, **kwargs):
+    # def save(self, **kwargs):
 
-        on_user_save(self.instance)
+    #     instance = super().save(**kwargs)
+    #     instance.save()
 
-        return super().save(**kwargs)
+    #     return instance
 
 
 

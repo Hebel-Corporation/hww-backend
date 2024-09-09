@@ -4,9 +4,7 @@ from django.utils.translation import gettext as _
 # from django.utils.translation import gettext_lazy as _
 from mptt.models import MPTTModel, TreeForeignKey
 from utils.userful_methods import on_account_save, on_office_save
-from prices.models import Referral
 
-from decimal import Decimal
 
 
 
@@ -48,7 +46,7 @@ class Office(models.Model) :
     location = models.ForeignKey(Location, related_name="offices", on_delete=models.SET_NULL, null=True)
     office_type = models.CharField(_("Office type"), choices=OFFICE_TYPE, default='sub_office', max_length=20)
     is_active = models.BooleanField(_('Is active'), default=True)
-    created_at = models.DateField(_("Date"), auto_now=False, auto_now_add=True)
+    created_at = models.DateTimeField(_("Date"), auto_now=False, auto_now_add=True)
     
 
     def __str__(self) -> str:
@@ -92,7 +90,7 @@ class Account(MPTTModel) :
     office = models.ForeignKey('members.Office', verbose_name=_("Account Office Recorder"), related_name="account_offices_set", blank=True, null=True, on_delete=models.SET_NULL)
     rewards = models.ManyToManyField("prices.Reward", verbose_name=_("Account rewards"), blank=True)
     is_active = models.BooleanField(_('Is active'), default=True)
-    created_at = models.DateField(_("Date"), auto_now=False, auto_now_add=True)
+    created_at = models.DateTimeField(_("Date"), auto_now=False, auto_now_add=True)
 
 
     class MPTTMeta:
@@ -104,21 +102,10 @@ class Account(MPTTModel) :
     # def set_parent(self, parent):
     #     self.sponsor_account = parent
 
-    def create_referral_bonus(self):
-
-        if self.referral_account and self.parent:
-            Referral.objects.create(
-            grantee = self.referral_account,
-                downline=self,
-                amount=self.package.price*Decimal('0.2') # 20% du prix du package
-            )
-
 
     def save(self, *args, **kwargs):
 
         on_account_save(self)
-
-            # self.create_referral_bonus()
 
         super(Account, self).save(*args, **kwargs)
 
