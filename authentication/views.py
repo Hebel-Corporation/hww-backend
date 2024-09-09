@@ -29,7 +29,7 @@ class CustomUserViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
 
-    @action(detail=False, methods=['get'], url_path='all')
+    @action(detail=False, methods=['get'], url_path='members')
     def members(self,request):
         member_queryset = CustomUser.objects.filter(user_type='member')
         member_serializer = CustomUserSerializer(member_queryset, many=True)
