@@ -47,6 +47,7 @@ def create_pairing_bonuses(new_member_account, upline, position:str):
    
     if upline :
         from prices.models import Matching
+        from config.models import MatchingPrice
 
         upline_direct_downlines = upline.get_children()
 
@@ -59,9 +60,13 @@ def create_pairing_bonuses(new_member_account, upline, position:str):
         if new_downline_leg_length < opposite_leg_lenght:
             pairing_downline = list(opposite_direct_downline.get_descendants(include_self=True))[new_downline_leg_length]
 
+            matchings_count = upline.matchings_count + 1
+            matching_price = MatchingPrice.objects.filter(begin__lte=matchings_count,end__gte=matchings_count).first()
+            amount = new_member_account.package.price * matching_price.package_price_percent
+
             matching =  Matching.objects.create(
                 grantee = upline,
-                amount=8
+                amount = amount 
             )
 
             matching.downlines.set([new_member_account,pairing_downline])
