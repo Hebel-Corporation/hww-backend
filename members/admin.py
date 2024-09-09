@@ -23,7 +23,7 @@ class OfficeAdmin(admin.ModelAdmin):
 
 @admin.register(Package)
 class PackageAdmin(admin.ModelAdmin):
-    list_display = ['id', 'name', 'price', 'description', 'created_at']
+    list_display = ['id', 'name', 'price', 'is_default', 'description', 'created_at', 'updated_at']
 
 
 
@@ -31,12 +31,12 @@ class PackageAdmin(admin.ModelAdmin):
 @admin.register(Account)
 class AccountAdmin(admin.ModelAdmin):
     mptt_indent_field = "id"
-    list_display = ['id', 'member', 'package', 'referral_account', 'parent', 'is_active', 'created_at']
+    list_display = ['id', 'member', 'referral_account', 'parent', 'is_active', 'created_at']
 
 
 
 @admin.register(Subscription)
 class SubscriptionAdmin(admin.ModelAdmin):
-    list_display = ['id', 'office', 'member_account', 'created_at']
+    list_display = ['id', 'office', 'package', 'member_account', 'created_at']
 
 

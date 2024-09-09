@@ -113,20 +113,14 @@ class OfficeViewSet(viewsets.ModelViewSet) :
                 member.office = office_instance
                 member.save()
 
-                package = None
-                if package_id :
-                    package = get_object_or_404(Package, id=package_id)
-                else :
-                    package = Package.objects.filter(is_default=True).first()
-
                 account = Account.objects.create(
                     member=member,
                     office = office_instance,
                     company_id = f"{member.company_id}-ACC0{1}",
-                    package = package,
                     referral_account = referral_account,
                     parent = sponsor_account,
                 )
+                account.save(package_id=package_id) # Transfer [package] instance in account save method
                 
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)

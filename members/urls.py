@@ -5,6 +5,7 @@ from authentication.views import CustomUserViewSet
 
 router = DefaultRouter()
 router.register('users', CustomUserViewSet, basename="users")
+router.register('accounts', AccountViewSet, basename="accounts")
 router.register('offices', OfficeViewSet, basename="offices")
 router.register('packages', PackageViewSet, basename="packages")
 router.register('subscriptions', SubscriptionViewSet, basename="subscriptions")
