@@ -31,7 +31,7 @@ class PackageAdmin(admin.ModelAdmin):
 @admin.register(Account)
 class AccountAdmin(admin.ModelAdmin):
     mptt_indent_field = "id"
-    list_display = ['id', 'member','company_id', 'package', 'referral_account', 'parent','position', 'is_active', 'created_at']
+    list_display = ['id', 'member','company_id', 'package', 'referral_account', 'parent','position','matchings_count', 'is_active', 'created_at']
 
 
 

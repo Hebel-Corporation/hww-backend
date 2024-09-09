@@ -61,6 +61,7 @@ def create_pairing_bonuses(new_member_account, upline, position:str):
             pairing_downline = list(opposite_direct_downline.get_descendants(include_self=True))[new_downline_leg_length]
 
             matchings_count = upline.matchings_count + 1
+            # matchings_count = Matching.objects.filter(grantee=upline).count() + 1
             matching_price = MatchingPrice.objects.filter(begin__lte=matchings_count,end__gte=matchings_count).first()
             amount = new_member_account.package.price * matching_price.package_price_percent
 
@@ -70,6 +71,8 @@ def create_pairing_bonuses(new_member_account, upline, position:str):
             )
 
             matching.downlines.set([new_member_account,pairing_downline])
+            upline.matchings_count = matchings_count
+            upline.save()
     
         create_pairing_bonuses(new_member_account,upline=upline.parent,position=upline.position)
 
