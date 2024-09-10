@@ -6,6 +6,7 @@ from django.contrib.auth.models import Group
 from .models import CustomUser
 from rest_framework.permissions import IsAuthenticated
 from .serializers import CustomTokenObtainPairSerializer, CustomGroupSerializer,CustomUserSerializer
+from members.serializers import AccountSerializer
 
 
 class CustomTokenObtainPairView(TokenObtainPairView):
@@ -35,5 +36,17 @@ class CustomUserViewSet(viewsets.ModelViewSet):
         member_serializer = CustomUserSerializer(member_queryset, many=True)
 
         return Response(data=member_serializer.data, status=status.HTTP_200_OK)
+    
+
+
+    @action(detail=True, methods=['get'], url_path='member-details')
+    def member_details(self, request, pk):
+        member_instance = self.get_object()
+        member_serializer = CustomUserSerializer(member_instance, many=False, exclude=['username', 'office', 'groups'])
+
+        return Response(data={
+            **member_serializer.data,
+            "accounts": AccountSerializer(member_instance.accounts.all(), many=True).data
+        }, status=status.HTTP_200_OK)
 
 

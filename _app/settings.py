@@ -54,7 +54,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
 
     'authentication',
-    '_config',
+    'config',
     'members',
     'prices',
 ]

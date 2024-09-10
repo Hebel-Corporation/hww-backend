@@ -4,6 +4,7 @@ from django.utils.translation import gettext as _
 # from django.utils.translation import gettext_lazy as _
 from mptt.models import MPTTModel, TreeForeignKey
 from prices.models import Referral
+from config.models import SubscriptionCode
 
 from decimal import Decimal
 
@@ -136,7 +137,7 @@ class Subscription(models.Model) :
     office = models.ForeignKey(Office, verbose_name=_("Office Creator"), related_name="subscriptions", null=True, on_delete=models.SET_NULL)
     package = models.ForeignKey(Package, verbose_name=_("Package"), null=True, on_delete=models.SET_NULL)
     member_account = models.ForeignKey(Account, verbose_name=_("Member account"), null=True, on_delete=models.SET_NULL)
-    subscription_code = models.ForeignKey("_config.SubscriptionCode", null=True, blank=True, on_delete=models.SET_NULL)
+    subscription_code = models.ForeignKey(SubscriptionCode, null=True, blank=True, on_delete=models.SET_NULL)
     created_at = models.DateTimeField(_('Created on'), auto_now_add=True)
 
     @transaction.atomic

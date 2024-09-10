@@ -36,6 +36,16 @@ class CustomUserSerializer(serializers.ModelSerializer):
 
         return count
 
+    
+    def __init__(self, *args, **kwargs):
+
+        exclude_fields = kwargs.pop('exclude', None)
+        super().__init__(*args, **kwargs)
+
+        if exclude_fields:
+            for field in exclude_fields:
+                self.fields.pop(field)
+
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):

@@ -83,7 +83,6 @@ class AccountSerializer(QueryFieldsMixin, serializers.ModelSerializer):
     class Meta:
         model = Account
         fields = '__all__'
-        depth = 1
 
 
     def save(self, **kwargs):
