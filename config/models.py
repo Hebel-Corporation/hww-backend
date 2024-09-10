@@ -1,8 +1,10 @@
+import uuid
 from django.db import models
 from utils.utils_functions import generate_subcription_code
 
 
 class SubscriptionCode(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     code = models.CharField(max_length=100)
     reccords_number = models.IntegerField()
     equivalent_amount = models.FloatField(default=0.0)
@@ -26,6 +28,7 @@ class SubscriptionCode(models.Model):
 
 
 class MatchingPrice(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     begin = models.IntegerField(default=0)
     end = models.IntegerField(default=0)
     package_price_percent = models.DecimalField(max_digits=6, decimal_places=3)

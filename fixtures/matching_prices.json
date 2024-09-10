@@ -1,0 +1,38 @@
+[
+    {
+        "model": "config.matchingprice",
+        "pk": "b05f773c-d8f1-4cda-9f7a-05e1b4a7f4a1",
+        "fields": {
+            "begin": 1,
+            "end": 50,
+            "package_price_percent": "10.000"
+        }
+    },
+    {
+        "model": "config.matchingprice",
+        "pk": "1cfa8e67-ecc9-4e2c-b50a-174702a6f09d",
+        "fields": {
+            "begin": 51,
+            "end": 200,
+            "package_price_percent": "7.000"
+        }
+    },
+    {
+        "model": "config.matchingprice",
+        "pk": "cfce2d1f-c0fa-4fbb-aad2-705a9f1a704b",
+        "fields": {
+            "begin": 201,
+            "end": 500,
+            "package_price_percent": "4.000"
+        }
+    },
+    {
+        "model": "config.matchingprice",
+        "pk": "2f2c07f5-bf2a-4879-915e-2bc8e6b68ef5",
+        "fields": {
+            "begin": 501,
+            "end": 1000,
+            "package_price_percent": "3.000"
+        }
+    }
+]

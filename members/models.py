@@ -145,7 +145,7 @@ class Subscription(models.Model) :
 
     @transaction.atomic
     def save(self, *args, **kwargs):
-        if self._state.adding and Referral.objects.all().count() >= 1 :
+        if self._state.adding and Account.objects.count() >= 1 :
 
             referral_price = Referral.objects.create(
                 grantee = self.member_account.referral_account,
