@@ -113,12 +113,17 @@ class OfficeViewSet(viewsets.ModelViewSet) :
                 member.office = office_instance
                 member.save()
 
+                account_position = None
+                if sponsor_account :
+                    account_position = 'left' if sponsor_account.get_children().count() < 1 else 'right'
+
                 account = Account.objects.create(
                     member=member,
                     office = office_instance,
                     company_id = f"{member.company_id}-ACC0{1}",
                     referral_account = referral_account,
                     parent = sponsor_account,
+                    position = account_position
                 )
                 account.save(package_id=package_id) # Transfer [package] instance in account save method
                 
@@ -256,7 +261,7 @@ class AccountViewSet(viewsets.ModelViewSet) :
             try :
                 sponsor_account = Account.objects.get(company_id=api_data.get('sponsor_account', None))
 
-                if not referral_account in sponsor_account.get_descendants(include_self=True) :
+                if not sponsor_account in referral_account.get_descendants(include_self=True) :
                     return Response(data={
                         "is_valid" : False,
                         "error_type": "sponsor_id",

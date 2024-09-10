@@ -15,6 +15,8 @@ def generate_subcription_code() -> str :
 
 # TODO : A EXECUTER AVANT D'ENREGISTRER LE COMPTE
 def create_pairing_bonuses(new_member_account, upline, position:str):
+
+    print("======================", new_member_account, upline, position)
    
     if upline :
         from prices.models import Matching

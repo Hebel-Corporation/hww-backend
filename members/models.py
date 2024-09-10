@@ -89,7 +89,7 @@ class Account(MPTTModel) :
     company_id = models.CharField(_("Company ID"), max_length=50,unique=True)
     referral_account = models.ForeignKey('self', verbose_name=_("Referral account"), null=True, blank=True, on_delete=models.SET_NULL)
     parent = TreeForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='children')
-    position = models.CharField(_("Position at Sponsor"), choices=POSITION, default='left', max_length=10,editable=False)
+    position = models.CharField(_("Position at Sponsor"), choices=POSITION, default='left', null=True, blank=True, max_length=10, editable=False)
     office = models.ForeignKey('members.Office', verbose_name=_("Account Office Recorder"), related_name="account_offices_set", blank=True, null=True, on_delete=models.SET_NULL)
     rewards = models.ManyToManyField("prices.Reward", verbose_name=_("Account rewards"), blank=True)
     is_active = models.BooleanField(_('Is active'), default=True)
@@ -103,8 +103,9 @@ class Account(MPTTModel) :
     def save(self, *args, **kwargs):
 
         package_id = kwargs.pop('package_id', None)
+        is_new = self._state.adding
   
-        if self._state.adding :
+        if is_new :
 
             package = None
 
@@ -123,10 +124,11 @@ class Account(MPTTModel) :
             )
             subscription.save()
 
+        super(Account, self).save(*args, **kwargs)
+
+        if is_new :
             # Creaing matchings if possible
             create_pairing_bonuses(new_member_account=self, upline=self.parent, position=self.position)
-
-        super(Account, self).save(*args, **kwargs)
 
 
 
