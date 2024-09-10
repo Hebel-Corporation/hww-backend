@@ -22,3 +22,14 @@ class SubscriptionCode(models.Model):
 
     def __str__(self):
         return self.office.office_code
+
+
+
+class MatchingPrice(models.Model):
+    begin = models.IntegerField(default=0)
+    end = models.IntegerField(default=0)
+    package_price_percent = models.DecimalField(max_digits=6, decimal_places=3)
+
+
+    def __str__(self):
+        return f"From {self.begin} to {self.end} is {self.package_price_percent}"

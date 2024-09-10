@@ -7,7 +7,7 @@ from prices.models import Referral
 from config.models import SubscriptionCode
 
 from decimal import Decimal
-
+from utils.utils_functions import create_pairing_bonuses
 
 
 class Country(models.Model) :
@@ -122,6 +122,9 @@ class Account(MPTTModel) :
                 member_account = self
             )
             subscription.save()
+
+            # Creaing matchings if possible
+            create_pairing_bonuses(new_member_account=self, upline=self.parent, position=self.position)
 
         super(Account, self).save(*args, **kwargs)
 

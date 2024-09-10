@@ -261,14 +261,15 @@ class AccountViewSet(viewsets.ModelViewSet) :
                         "is_valid" : False,
                         "error_type": "sponsor_id",
                         "message": "Ce sponsor n'est pas dans le même réseau que le parrain spécifier."
-                    }, status=status.HTTP_202_ACCEPTED)
+                    }, status=status.HTTP_400_BAD_REQUEST)
                 
-                if sponsor_account.get_descendant_count() >= 2 :
+                # if sponsor_account.get_descendant_count() >= 2 :
+                if sponsor_account.get_children().count() >= 2 :
                     return Response(data={
                         "is_valid" : False,
                         "error_type": "sponsor_id",
                         "message": "Ce sponsor a déjà atteinds le nombre maximal des enfants direct."
-                    }, status=status.HTTP_202_ACCEPTED)
+                    }, status=status.HTTP_400_BAD_REQUEST)
                 else :
                     return Response(data={
                         "is_valid": True
@@ -279,14 +280,14 @@ class AccountViewSet(viewsets.ModelViewSet) :
                     "is_valid" : False,
                     "error_type": "sponsor_id",
                     "message": "Ce sponsor n'existe pas dans aucun réseau de la plateforme."
-                }, status=status.HTTP_202_ACCEPTED)
+                }, status=status.HTTP_400_BAD_REQUEST)
             
         except Account.DoesNotExist :
             return Response(data={
                     "is_valid" : False,
                     "error_type": "parrain_id",
                     "message": "Ce parrain n'existe pas dans la plateforme."
-                }, status=status.HTTP_202_ACCEPTED)
+                }, status=status.HTTP_400_BAD_REQUEST)
 
 
 
