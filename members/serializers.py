@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from drf_queryfields import QueryFieldsMixin
 from members.models import *
+from authentication.models import CustomUser
 
 
 class CountrySerializer(QueryFieldsMixin, serializers.ModelSerializer):
@@ -90,13 +91,24 @@ class AccountSerializer(QueryFieldsMixin, serializers.ModelSerializer):
 
 
 
+    def __init__(self, *args, **kwargs):
+
+        exclude_fields = kwargs.pop('exclude', None)
+        super().__init__(*args, **kwargs)
+
+        if exclude_fields:
+            for field in exclude_fields:
+                self.fields.pop(field)
+
+
+
     def get_balance(self, instance):
         return instance.get_balance
 
 
 
     def get_downline_count(self, instance):
-        return instance.get_descendants().count()
+        return instance.get_descendants(include_self=False).count()
 
 
     # children = serializers.SerializerMethodField()

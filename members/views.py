@@ -118,7 +118,7 @@ class OfficeViewSet(viewsets.ModelViewSet) :
                 member.save()
 
                 # all create account function
-                create_account(referral=referral_account, sponsor=sponsor_account, member=member, office=office_instance, package_id=package_id)
+                account = create_account(referral=referral_account, sponsor=sponsor_account, member=member, office=office_instance, package_id=package_id)
                 
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
@@ -143,7 +143,7 @@ class OfficeViewSet(viewsets.ModelViewSet) :
                 member = get_object_or_404(CustomUser, id=api_data.get('member', None))
 
                 # all create account function
-                create_account(referral=referral_account, sponsor=sponsor_account, member=member, office=office_instance, package_id=package_id)
+                account = create_account(referral=referral_account, sponsor=sponsor_account, member=member, office=office_instance, package_id=package_id)
                 
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
@@ -269,6 +269,15 @@ class AccountViewSet(viewsets.ModelViewSet) :
                     "error_type": "parrain_id",
                     "message": "Ce parrain n'existe pas dans la plateforme."
                 }, status=status.HTTP_203_NON_AUTHORITATIVE_INFORMATION)
+
+
+
+    @action(detail=True, methods=['get'], url_path='member-downlines')
+    def member_downlines(self, request, pk):
+        account_instance = self.get_object()
+        account_serializer = AccountSerializer(account_instance.get_descendants(include_self=False), many=True, exclude=['balance', 'lft', 'rght', 'tree_id', 'level', 'office'])
+
+        return Response(data=account_serializer.data, status=status.HTTP_200_OK)
 
 
 

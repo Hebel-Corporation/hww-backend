@@ -140,13 +140,11 @@ class Account(MPTTModel) :
 
     @property
     def get_balance(self):
+        referrals = Referral.objects.filter(grantee=self, is_paid=False) # Récupérer les referrals associés à un compte
+        matchings = Matching.objects.filter(grantee=self, is_paid=False) # Récupérer les matchings associés à un compte
 
-        # Récupérer le ContentType des modèles Referral et Matching
-        referral_ct = ContentType.objects.get_for_model(Referral)
-        matching_ct = ContentType.objects.get_for_model(Matching)
-
-        # Requête pour récupérer tous les objets Referral et Matching associés à account_instance
-        all_bonuses = BonusBaseModel.objects.filter(grantee=self, content_type__in=[referral_ct, matching_ct], is_paid=False)
+        # Combiner les résultats
+        all_bonuses = list(referrals) + list(matchings)
         balance = 0
         for bonus in all_bonuses :
             balance += bonus.amount

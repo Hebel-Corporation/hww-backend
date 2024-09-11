@@ -32,7 +32,7 @@ class CustomUserSerializer(serializers.ModelSerializer):
         count = 0
         member_accounts = instance.accounts.all()
         for account in member_accounts :
-            count += account.get_descendant_count()
+            count += account.get_descendants(include_self=False).count()
 
         return count
 

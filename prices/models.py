@@ -14,11 +14,6 @@ class BonusBaseModel(models.Model):
     updated_at = models.DateField(auto_now=True)
 
 
-    # Champs pour le GenericForeignKey
-    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
-    object_id = models.UUIDField()
-    content_object = GenericForeignKey('content_type', 'object_id')
-
     class Meta:
         abstract = True
 

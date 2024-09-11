@@ -37,6 +37,8 @@ def create_account(referral, sponsor, member, office, package_id):
     )
     account.save(package_id=package_id) # Transfer [package] instance in account save method
 
+    return account
+
 
 
 
