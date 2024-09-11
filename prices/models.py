@@ -1,32 +1,47 @@
 import uuid
 from django.db import models
 from django.utils.translation import gettext as _
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.contenttypes.fields import GenericForeignKey
 
 
-
-class Referral(models.Model) :
+class BonusBaseModel(models.Model):
     id = models.UUIDField(_("Unique ID"), primary_key=True, default=uuid.uuid4, editable=False)
-    grantee = models.ForeignKey("members.Account", verbose_name=_("Grantee account"), related_name="referrals", on_delete=models.CASCADE)
-    downline = models.ForeignKey("members.Account", verbose_name=_("Downline account"), on_delete=models.CASCADE)
-    amount = models.DecimalField(_('Referral amount'), max_digits=6, decimal_places=2)
+    grantee = models.ForeignKey("members.Account", verbose_name=_("Grantee account"), on_delete=models.CASCADE)
+    amount = models.DecimalField(max_digits=6, decimal_places=2)
+    is_paid = models.BooleanField(default=False)
     created_at = models.DateField(auto_now_add=True)
+    updated_at = models.DateField(auto_now=True)
+
+
+    # Champs pour le GenericForeignKey
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    object_id = models.UUIDField()
+    content_object = GenericForeignKey('content_type', 'object_id')
+
+    class Meta:
+        abstract = True
+
 
     def __str__(self) -> str:
         return self.grantee.member.company_id
 
 
 
-class Matching(models.Model) :
-    id = models.UUIDField(_("Unique ID"), primary_key=True, default=uuid.uuid4, editable=False)
-    grantee = models.ForeignKey("members.Account", verbose_name=_("Grantee account"), related_name="grandee", on_delete=models.CASCADE)
-    downlines = models.ManyToManyField("members.Account", verbose_name=_("Downline accounts"), related_name="downlines")
-    amount = models.DecimalField(_('Referral amount'), max_digits=6, decimal_places=2)
-    validated = models.BooleanField(default=False)
-    created_at = models.DateField(auto_now_add=True)
+class Referral(BonusBaseModel) :
+    downline = models.ForeignKey("members.Account", related_name="referral_downline", null=True, on_delete=models.SET_NULL)
 
 
-    def __str__(self) -> str:
-        return self.grantee.member.company_id
+
+class Matching(BonusBaseModel) :
+    downlines = models.ManyToManyField("members.Account", related_name="matching_downlines")
+    is_validated = models.BooleanField(default=False)
+
+
+
+class PurchaseBonus(models.Model) :
+    pass
+
 
 
 
@@ -34,9 +49,6 @@ class Reward(models.Model) :
     pass
 
 
-
-class PurchaseBonus(models.Model) :
-    pass
 
 
 

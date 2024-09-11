@@ -4,6 +4,8 @@ from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.base_user import BaseUserManager
 from django.utils.translation import gettext as _
 
+from django.conf import settings
+
 
 class CustomUserManager(BaseUserManager):
    
@@ -27,7 +29,7 @@ class CustomUserManager(BaseUserManager):
         extra_fields.setdefault('is_active', True)
         extra_fields.setdefault('user_type', 'admin')
         admin_count = self.model.objects.filter(user_type='admin').count()
-        extra_fields.setdefault('company_id', f'HWW-SU0{admin_count+1}')
+        extra_fields.setdefault('company_id', f'{settings.COMPANY_INITIAL}-{settings.SUPERUSER_COMPANY_ID_INITIAL}{admin_count+1}')
 
         if extra_fields.get('is_staff') is not True:
             raise ValueError(_('Superuser must have is_staff=True.'))

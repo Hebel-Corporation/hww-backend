@@ -1,7 +1,6 @@
 from rest_framework import serializers
 from drf_queryfields import QueryFieldsMixin
 from members.models import *
-from utils.userful_methods import on_account_save, on_office_save, get_new_company_id
 
 
 class CountrySerializer(QueryFieldsMixin, serializers.ModelSerializer):
@@ -73,6 +72,7 @@ class OfficeSerializer(QueryFieldsMixin, serializers.ModelSerializer):
 
 
 class PackageSerializer(QueryFieldsMixin, serializers.ModelSerializer):
+
     class Meta:
         model = Package
         fields = '__all__'
@@ -80,16 +80,24 @@ class PackageSerializer(QueryFieldsMixin, serializers.ModelSerializer):
 
 
 class AccountSerializer(QueryFieldsMixin, serializers.ModelSerializer):
+
+    balance = serializers.SerializerMethodField()
+    downline_count = serializers.SerializerMethodField()
+
     class Meta:
         model = Account
         fields = '__all__'
 
 
-    def save(self, **kwargs):
 
-        on_account_save(self.instance)
+    def get_balance(self, instance):
+        return instance.get_balance
 
-        return super().save(**kwargs)
+
+
+    def get_downline_count(self, instance):
+        return instance.get_descendants().count()
+
 
     # children = serializers.SerializerMethodField()
 

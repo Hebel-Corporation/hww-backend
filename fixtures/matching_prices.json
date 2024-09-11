@@ -5,7 +5,7 @@
         "fields": {
             "begin": 1,
             "end": 50,
-            "package_price_percent": "10.000"
+            "package_price_percent": "0.100"
         }
     },
     {
@@ -14,7 +14,7 @@
         "fields": {
             "begin": 51,
             "end": 200,
-            "package_price_percent": "7.000"
+            "package_price_percent": "0.070"
         }
     },
     {
@@ -23,7 +23,7 @@
         "fields": {
             "begin": 201,
             "end": 500,
-            "package_price_percent": "4.000"
+            "package_price_percent": "0.040"
         }
     },
     {
@@ -32,7 +32,7 @@
         "fields": {
             "begin": 501,
             "end": 1000,
-            "package_price_percent": "3.000"
+            "package_price_percent": "0.030"
         }
     }
 ]

@@ -3,11 +3,12 @@ from django.db import models, transaction
 from django.utils.translation import gettext as _
 # from django.utils.translation import gettext_lazy as _
 from mptt.models import MPTTModel, TreeForeignKey
-from prices.models import Referral
+from prices.models import Referral, Matching
 from config.models import SubscriptionCode
 
 from decimal import Decimal
 from utils.utils_functions import create_pairing_bonuses
+from django.contrib.contenttypes.models import ContentType
 
 
 class Country(models.Model) :
@@ -131,6 +132,27 @@ class Account(MPTTModel) :
             create_pairing_bonuses(new_member_account=self, upline=self.parent, position=self.position)
 
 
+    @property
+    def get_matching_count(self):
+        return Matching.objects.filter(grantee=self).count()
+
+
+
+    @property
+    def get_balance(self):
+
+        # Récupérer le ContentType des modèles Referral et Matching
+        referral_ct = ContentType.objects.get_for_model(Referral)
+        matching_ct = ContentType.objects.get_for_model(Matching)
+
+        # Requête pour récupérer tous les objets Referral et Matching associés à account_instance
+        all_bonuses = BonusBaseModel.objects.filter(grantee=self, content_type__in=[referral_ct, matching_ct], is_paid=False)
+        balance = 0
+        for bonus in all_bonuses :
+            balance += bonus.amount
+
+        return balance
+
 
     def __str__(self) -> str:
         return self.company_id
@@ -141,7 +163,7 @@ class Subscription(models.Model) :
     id = models.UUIDField(_("ID"), primary_key=True, default=uuid.uuid4, editable=False)
     office = models.ForeignKey(Office, verbose_name=_("Office Creator"), related_name="subscriptions", null=True, on_delete=models.SET_NULL)
     package = models.ForeignKey(Package, verbose_name=_("Package"), null=True, on_delete=models.SET_NULL)
-    member_account = models.ForeignKey(Account, verbose_name=_("Member account"), null=True, on_delete=models.SET_NULL)
+    member_account = models.ForeignKey(Account, verbose_name=_("Member account"), null=True, on_delete=models.CASCADE)
     subscription_code = models.ForeignKey(SubscriptionCode, null=True, blank=True, on_delete=models.SET_NULL)
     created_at = models.DateTimeField(_('Created on'), auto_now_add=True)
 

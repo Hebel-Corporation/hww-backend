@@ -11,6 +11,9 @@ from authentication.serializers import CustomUserSerializer, CustomGroupSerializ
 from authentication.models import CustomUser
 from django.contrib.auth.models import Group
 from utils.custom_error_exceptions import UserNotStaffException, UserInvalidGroupException
+from utils.utils_functions import create_account
+
+from django.conf import settings
 
 
 class CountryViewSet(viewsets.ModelViewSet) :
@@ -40,6 +43,7 @@ class OfficeViewSet(viewsets.ModelViewSet) :
     queryset = Office.objects.all()
     serializer_class = OfficeSerializer
     permission_classes = [IsAuthenticated]
+
 
     @action(detail=True, methods=['get'], url_path='staffs')
     def staffs(self,request, pk=None):
@@ -71,7 +75,7 @@ class OfficeViewSet(viewsets.ModelViewSet) :
         # Création de l'utilisateur staff
         last_staff_instance = CustomUser.objects.filter(user_type='staff').order_by('-date_joined').first()
         staff_id = last_staff_instance.company_id.split('-').pop()
-        staff = staff_serializer.save(company_id=f"{'-'.join(last_staff_instance.company_id.split('-')[:-1])}-S0{int(staff_id[1:])+1}")
+        staff = staff_serializer.save(company_id=f"{'-'.join(last_staff_instance.company_id.split('-')[:-1])}-{settings.STAFF_COMPANY_ID__INITIAL}{int(staff_id[1:])+1}")
         staff.groups.set(staff_groups)
         staff.set_password(staff_data.get('password'))
         staff.office = office_instance
@@ -100,32 +104,21 @@ class OfficeViewSet(viewsets.ModelViewSet) :
                 referral_account = None if is_first_node else get_object_or_404(Account, company_id=uplines_data.get('referral_account', None))
                 sponsor_account = None if is_first_node else get_object_or_404(Account, company_id=uplines_data.get('sponsor_account', None))
 
-                member_id = f"HWW-{office_instance.office_code}-M0{CustomUser.objects.filter(user_type='member').count()+1}"
+                member_id = f"{settings.COMPANY_INITIAL}-{office_instance.office_code}-{settings.MEMBER_COMPANY_ID_INITIAL}{CustomUser.objects.filter(user_type='member').count()+1}"
                 member_data['username'] = ''.join(member_id.split('-'))
-                member_data['password'] = "1234"
+                member_data['password'] = settings.MEMBER_DEFAULT_PASSWORD
                 member_serialiser = CustomUserSerializer(data=member_data)
                 member_serialiser.is_valid(raise_exception=True)
 
                 member = member_serialiser.save(company_id=member_id)
                 member_group = Group.objects.get(name='membre')
                 member.groups.set([member_group])
-                member.set_password("1234")
+                member.set_password(settings.MEMBER_DEFAULT_PASSWORD)
                 member.office = office_instance
                 member.save()
 
-                account_position = None
-                if sponsor_account :
-                    account_position = 'left' if sponsor_account.get_children().count() < 1 else 'right'
-
-                account = Account.objects.create(
-                    member=member,
-                    office = office_instance,
-                    company_id = f"{member.company_id}-ACC0{1}",
-                    referral_account = referral_account,
-                    parent = sponsor_account,
-                    position = account_position
-                )
-                account.save(package_id=package_id) # Transfer [package] instance in account save method
+                # all create account function
+                create_account(referral=referral_account, sponsor=sponsor_account, member=member, office=office_instance, package_id=package_id)
                 
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
@@ -149,20 +142,8 @@ class OfficeViewSet(viewsets.ModelViewSet) :
                 sponsor_account = get_object_or_404(Account, company_id=api_data.get('sponsor_account', None))
                 member = get_object_or_404(CustomUser, id=api_data.get('member', None))
 
-                package = None
-                if package_id :
-                    package = get_object_or_404(Package, id=package_id)
-                else :
-                    package = Package.objects.filter(is_default=True).first()
-
-                account = Account.objects.create(
-                    member=member,
-                    office = office_instance,
-                    company_id = f"{member.company_id}-ACC0{member.accounts.count()+1}",
-                    package = package,
-                    referral_account = referral_account,
-                    parent = sponsor_account,
-                )
+                # all create account function
+                create_account(referral=referral_account, sponsor=sponsor_account, member=member, office=office_instance, package_id=package_id)
                 
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
@@ -201,7 +182,7 @@ class OfficeViewSet(viewsets.ModelViewSet) :
 
                 # Création de l'utilisateur staff
                 staff_count = CustomUser.objects.filter(user_type="staff").count()
-                staff = staff_serializer.save(company_id=f"HWW-{office.office_code}-S0{staff_count+1}")
+                staff = staff_serializer.save(company_id=f"{settings.COMPANY_INITIAL}-{office.office_code}-{settings.STAFF_COMPANY_ID__INITIAL}{staff_count+1}")
                 staff.groups.set(staff_groups)
                 staff.set_password(staff_data.get('password'))
                 staff.office = office
@@ -216,12 +197,7 @@ class OfficeViewSet(viewsets.ModelViewSet) :
         }, status=status.HTTP_201_CREATED)
 
     
-    
-    
-    @action(detail=False, methods=['post'], url_path='assign_staff')
-    def assign_staff():
 
-        return Response()
 
 
 

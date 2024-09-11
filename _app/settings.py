@@ -18,8 +18,15 @@ from datetime import timedelta
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
+# App Global Constants
+COMPANY_INITIAL = "HWW"
+SUPERUSER_COMPANY_ID_INITIAL = "SU0"
+STAFF_COMPANY_ID__INITIAL = "S0"
+MEMBER_COMPANY_ID_INITIAL = "M0"
+ACCOUNT_COMPANY_ID_INITIAL = "ACC0"
+MEMBER_DEFAULT_PASSWORD = '1234'
+
+
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-(plx#xllgzh($6#=w3i8c^2x*o3io)js0z*nrj7-6q8ywd&qy+'
