@@ -42,7 +42,7 @@ class CustomUserViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['get'], url_path='member-details')
     def member_details(self, request, pk):
         member_instance = self.get_object()
-        member_serializer = CustomUserSerializer(member_instance, many=False, exclude=['username', 'office', 'groups'])
+        member_serializer = CustomUserSerializer(member_instance, many=False, exclude=['office', 'groups'])
 
         return Response(data={
             **member_serializer.data,

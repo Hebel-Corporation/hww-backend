@@ -84,6 +84,7 @@ class AccountSerializer(QueryFieldsMixin, serializers.ModelSerializer):
 
     balance = serializers.SerializerMethodField()
     downline_count = serializers.SerializerMethodField()
+    member = serializers.SerializerMethodField()
 
     class Meta:
         model = Account
@@ -109,6 +110,19 @@ class AccountSerializer(QueryFieldsMixin, serializers.ModelSerializer):
 
     def get_downline_count(self, instance):
         return instance.get_descendants(include_self=False).count()
+
+
+
+    def get_member(self, instance):
+        return {
+            "id": instance.member.id,
+            "first_name": instance.member.first_name,
+            "last_name": instance.member.last_name,
+            "gender": instance.member.gender,
+            "company_id": instance.member.company_id,
+            "phone": instance.member.phone,
+            "user_type": instance.member.user_type,
+        }
 
 
     # children = serializers.SerializerMethodField()
