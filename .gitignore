@@ -13,6 +13,7 @@ media
 .venv/
 .vscode/
 Pipfile
+Pipfile.lock
 
 # migrations
 migrations/
