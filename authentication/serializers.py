@@ -19,10 +19,11 @@ class CustomUserSerializer(serializers.ModelSerializer):
     office = OfficeSerializer(many=False, read_only=True)
     groups = CustomGroupSerializer(many=True,required=False, read_only=True)
     downline_count = serializers.SerializerMethodField()
+    accounts_number = serializers.SerializerMethodField()
 
     class Meta:
         model = CustomUser
-        fields = ['id', 'first_name','last_name', 'gender', 'downline_count', 'company_id', 'phone', 'user_type','office','groups']
+        fields = ['id', 'username', 'password', 'first_name','last_name', 'gender', 'downline_count', 'accounts_number', 'company_id', 'phone', 'user_type','office','groups']
         extra_kwargs = {
             'password': {'write_only' : True},
         }
@@ -35,6 +36,10 @@ class CustomUserSerializer(serializers.ModelSerializer):
             count += account.get_descendants(include_self=False).count()
 
         return count
+    
+
+    def get_accounts_number(self, instance):
+        return instance.accounts.count()
 
     
     def __init__(self, *args, **kwargs):

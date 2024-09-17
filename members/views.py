@@ -13,6 +13,9 @@ from django.contrib.auth.models import Group
 from utils.custom_error_exceptions import UserNotStaffException, UserInvalidGroupException
 from utils.utils_functions import create_account
 
+from config.serializers import SubscriptionCodeSerializer
+from config.models import SubscriptionCode
+
 from django.conf import settings
 
 
@@ -49,7 +52,7 @@ class OfficeViewSet(viewsets.ModelViewSet) :
     def staffs(self,request, pk=None):
         instance = self.get_object()
         staff_queryset = instance.offices_set.filter(user_type='staff')
-        staff_serializer = CustomUserSerializer(staff_queryset, many=True)
+        staff_serializer = CustomUserSerializer(staff_queryset, many=True, exclude=['username', 'password'])
 
         return Response(data=staff_serializer.data, status=status.HTTP_200_OK)
 
@@ -118,7 +121,13 @@ class OfficeViewSet(viewsets.ModelViewSet) :
                 member.save()
 
                 # all create account function
-                account = create_account(referral=referral_account, sponsor=sponsor_account, member=member, office=office_instance, package_id=package_id)
+                account = create_account(
+                    referral=referral_account, 
+                    sponsor=sponsor_account, 
+                    member=member, 
+                    office=office_instance, 
+                    package_id=package_id
+                )
                 
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
@@ -143,7 +152,13 @@ class OfficeViewSet(viewsets.ModelViewSet) :
                 member = get_object_or_404(CustomUser, id=api_data.get('member', None))
 
                 # all create account function
-                account = create_account(referral=referral_account, sponsor=sponsor_account, member=member, office=office_instance, package_id=package_id)
+                account = create_account(
+                    referral=referral_account, 
+                    sponsor=sponsor_account, 
+                    member=member, 
+                    office=office_instance, 
+                    package_id=package_id
+                )
                 
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
@@ -152,9 +167,59 @@ class OfficeViewSet(viewsets.ModelViewSet) :
     
 
 
+
+    @action(detail=True, methods=['get'], url_path='get-register-codes')
+    def get_register_codes(self,request, pk=None):
+        instance = self.get_object()
+        code_queryset = instance.office_codes.all()
+        code_serializer = SubscriptionCodeSerializer(code_queryset, many=True)
+
+        return Response(data=code_serializer.data, status=status.HTTP_200_OK)
+
+
+
+    @action(detail=True, methods=['get'], url_path='check-register-code-validity')
+    def check_register_code_validity(self,request, pk=None):
+        office_instance = self.get_object()
+        is_valid = office_instance.office_codes.filter(is_valid=True).exists()
+
+        return Response(data=is_valid, status=status.HTTP_200_OK)
+
+
+
+
+    @action(detail=True, methods=['post'], url_path='generate-register-code')
+    def generate_register_code(self,request, pk=None):
+
+        office_instance = self.get_object()
+
+        api_data = request.data
+        package_id = api_data.get('package', None)
+
+        try :
+            with transaction.atomic():
+
+                package = get_object_or_404(Package, id=package_id)
+
+                subscription_code = SubscriptionCode.objects.create(
+                    office=office_instance,
+                    package=package,
+                    reccords_number=api_data.get('codeNumber', 0),
+                    amount_paid=api_data.get('amount', 0)
+                )
+                
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+        return Response(data=SubscriptionCodeSerializer(subscription_code).data,status=status.HTTP_201_CREATED)
+    
+
+
     def create(self, request):
         office_data = request.data.get('office')
         staff_data = request.data.get('staff')
+
+        print("STAFF DATA ========", staff_data)
 
         # Récupération de l'instance Location
         location_instance = get_object_or_404(Location, id=office_data.pop('location'))
@@ -193,7 +258,7 @@ class OfficeViewSet(viewsets.ModelViewSet) :
 
         return Response({
             "office": OfficeSerializer(office).data,
-            "staff": CustomUserSerializer(staff).data
+            "staff": CustomUserSerializer(staff, exclude=['username', 'password']).data
         }, status=status.HTTP_201_CREATED)
 
     

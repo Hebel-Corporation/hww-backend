@@ -22,20 +22,36 @@ def generate_subcription_code() -> str :
     It takes 3 params [referral, sponsor and member]
 """
 def create_account(referral, sponsor, member, office, package_id):
-    from members.models import Account
+    from members.models import Account, Package
+    from config.models import SubscriptionCode
     account_position = None
     if sponsor :
         account_position = 'left' if sponsor.get_children().count() < 1 else 'right'
 
-    account = Account.objects.create(
+    package = None
+    if package_id :
+        try :
+            package = Package.objects.get(id=package_id)
+        except Package.DoesNotExist :
+            raise ValueError(f"Il n'existe pas de paquet avec l'ID {package_id}.")
+    else :
+        package = Package.objects.filter(is_default=True).first() 
+
+    try :
+        subscription_code = SubscriptionCode.objects.get(office=office, package=package, is_valid=True)
+    except SubscriptionCode.DoesNotExist :
+        raise ValueError(f"Vous avez pas de codes d'enregistrement valides pour ce paquet enfin d'enregistrer ce compte.")
+
+    account = Account(
         member=member,
         office = office,
         company_id = f"{member.company_id}-{settings.ACCOUNT_COMPANY_ID_INITIAL}{member.accounts.count()+1}",
         referral_account = referral,
         parent = sponsor,
-        position = account_position
+        position = account_position,
+        pvs=subscription_code.package.price
     )
-    account.save(package_id=package_id) # Transfer [package] instance in account save method
+    account.save(subscription_code=subscription_code) # Transfer [package] instance in account save method
 
     return account
 
@@ -50,6 +66,11 @@ def create_pairing_bonuses(new_member_account, upline, position:str):
         from prices.models import Matching
         from config.models import MatchingPrice
 
+        # Increase upline PVs
+        upline.pvs += new_member_account.pvs
+        upline.save()
+
+        # Get upline direct children
         upline_direct_downlines = upline.get_children()
 
         new_downline_side_direct_downline = upline_direct_downlines.filter(position=position).first()

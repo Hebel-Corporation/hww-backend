@@ -91,6 +91,7 @@ class Account(MPTTModel) :
     referral_account = models.ForeignKey('self', verbose_name=_("Referral account"), null=True, blank=True, on_delete=models.SET_NULL)
     parent = TreeForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='children')
     position = models.CharField(_("Position at Sponsor"), choices=POSITION, default='left', null=True, blank=True, max_length=10, editable=False)
+    pvs = models.IntegerField(editable=False)
     office = models.ForeignKey('members.Office', verbose_name=_("Account Office Recorder"), related_name="account_offices_set", blank=True, null=True, on_delete=models.SET_NULL)
     rewards = models.ManyToManyField("prices.Reward", verbose_name=_("Account rewards"), blank=True)
     is_active = models.BooleanField(_('Is active'), default=True)
@@ -103,27 +104,26 @@ class Account(MPTTModel) :
     @transaction.atomic
     def save(self, *args, **kwargs):
 
-        package_id = kwargs.pop('package_id', None)
+        subscription_code = kwargs.pop('subscription_code', None)
         is_new = self._state.adding
   
         if is_new :
 
-            package = None
-
-            if package_id :
-                try :
-                    package = Package.objects.get(id=package_id)
-                except Package.DoesNotExist :
-                    raise ValueError(f"Package with ID {package_id} does not exist.")
-            else :
-                package = Package.objects.filter(is_default=True).first() 
-
             subscription = Subscription.objects.create(
                 office = self.office,
-                package = package,
-                member_account = self
+                package = subscription_code.package,
+                member_account = self,
+                subscription_code =  subscription_code
             )
             subscription.save()
+
+            # Increament subscription used code 
+            if (subscription_code.used_reccords_number+1 >= subscription_code.reccords_number):
+                subscription_code.is_valid = False
+            
+            subscription_code.used_reccords_number += 1
+            subscription_code.save()
+
 
         super(Account, self).save(*args, **kwargs)
 

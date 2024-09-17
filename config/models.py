@@ -7,8 +7,9 @@ class SubscriptionCode(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     code = models.CharField(max_length=100)
     reccords_number = models.IntegerField()
-    equivalent_amount = models.FloatField(default=0.0)
-    office = models.ForeignKey("members.Office", on_delete=models.SET_NULL, null=True, blank=True)
+    used_reccords_number = models.IntegerField(editable=False, default=0)
+    amount_paid = models.DecimalField(max_digits=10, decimal_places=2)
+    office = models.ForeignKey("members.Office", related_name="office_codes", on_delete=models.SET_NULL, null=True, blank=True)
     package = models.ForeignKey("members.Package", null=True, on_delete=models.SET_NULL)
     is_valid = models.BooleanField(default=True)
     created_at = models.DateField(auto_now_add=True)
@@ -16,10 +17,16 @@ class SubscriptionCode(models.Model):
 
 
     def save(self, *args, **kwargs):
-        if not self.id:
+        if self._state.adding :
             self.code = generate_subcription_code()
 
         super(SubscriptionCode, self).save(*args, **kwargs)
+
+    
+
+    @property
+    def total_amount(self):
+        return self.reccords_number * self.package.price
 
 
     def __str__(self):
