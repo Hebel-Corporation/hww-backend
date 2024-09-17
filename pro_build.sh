@@ -12,7 +12,7 @@ python manage.py migrate
 # Charger les fixtures
 python manage.py loaddata fixtures/*.json
 
-if [[ $CREATE_SUPERUSER ]];
-then
-    python manage.py createsuperuser --no-input --username "$HWW_SUPERUSER_USERNAME" --email "$HWW_SUPERUSER_EMAIL"
-fi
+# if [[ $CREATE_SUPERUSER ]];
+# then
+#     python manage.py createsuperuser --no-input --username "$HWW_SUPERUSER_USERNAME" --email "$HWW_SUPERUSER_EMAIL"
+# fi
