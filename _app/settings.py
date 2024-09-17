@@ -132,7 +132,7 @@ DATABASES = {
     }
 }
 
-# DATABASES['default'] = dj_database_url.parse(config('PG_DATABASE_URL'))
+DATABASES['default'] = dj_database_url.parse(config('PG_DATABASE_URL'))
 
 
 # Password validation
