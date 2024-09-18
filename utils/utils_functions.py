@@ -38,7 +38,7 @@ def create_account(referral, sponsor, member, office, package_id):
         package = Package.objects.filter(is_default=True).first() 
 
     try :
-        subscription_code = SubscriptionCode.objects.get(office=office, package=package, is_valid=True)
+        subscription_code = SubscriptionCode.objects.filter(office=office, package=package, is_valid=True).order_by('created_at').first()
     except SubscriptionCode.DoesNotExist :
         raise ValueError(f"Vous avez pas de codes d'enregistrement valides pour ce paquet enfin d'enregistrer ce compte.")
 
