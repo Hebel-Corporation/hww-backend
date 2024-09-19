@@ -137,6 +137,11 @@ class Account(MPTTModel) :
         return Matching.objects.filter(grantee=self).count()
 
 
+    @property
+    def get_referral_count(self):
+        return Referral.objects.filter(grantee=self).count()
+
+
 
     @property
     def get_balance(self):

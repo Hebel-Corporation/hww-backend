@@ -342,7 +342,16 @@ class AccountViewSet(viewsets.ModelViewSet) :
     @action(detail=True, methods=['get'], url_path='member-downlines')
     def member_downlines(self, request, pk):
         account_instance = self.get_object()
-        account_serializer = AccountSerializer(account_instance.get_descendants(include_self=False), many=True, exclude=['balance', 'lft', 'rght', 'tree_id', 'level', 'office'])
+        account_serializer = AccountSerializer(account_instance.get_descendants(include_self=False), many=True, exclude=['balance', 'rewards', 'matching_count', 'referral_count', 'lft', 'rght', 'tree_id', 'level', 'office'])
+
+        return Response(data=account_serializer.data, status=status.HTTP_200_OK)
+
+
+
+    @action(detail=True, methods=['get'], url_path='account-details')
+    def account_details(self, request, pk):
+        account_instance = self.get_object()
+        account_serializer = AccountSerializer(account_instance, many=False, exclude=['lft', 'rght', 'tree_id', 'level'])
 
         return Response(data=account_serializer.data, status=status.HTTP_200_OK)
     
