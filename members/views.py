@@ -15,6 +15,8 @@ from utils.utils_functions import create_account
 
 from config.serializers import SubscriptionCodeSerializer
 from config.models import SubscriptionCode
+from prices.models import Referral, Matching
+from prices.serializers import ReferralSerializer, MatchingSerializer
 
 from django.conf import settings
 
@@ -343,6 +345,27 @@ class AccountViewSet(viewsets.ModelViewSet) :
         account_serializer = AccountSerializer(account_instance.get_descendants(include_self=False), many=True, exclude=['balance', 'lft', 'rght', 'tree_id', 'level', 'office'])
 
         return Response(data=account_serializer.data, status=status.HTTP_200_OK)
+    
+
+
+    @action(detail=True, methods=['get'], url_path='member-referrals')
+    def member_referrals(self, request, pk):
+        account_instance = self.get_object()
+        referral_queryset = Referral.objects.filter(grantee=account_instance)
+        referral_serializer = ReferralSerializer(referral_queryset, many=True)
+
+        return Response(data=referral_serializer.data, status=status.HTTP_200_OK)
+    
+
+
+
+    @action(detail=True, methods=['get'], url_path='member-matchings')
+    def member_matchings(self, request, pk):
+        account_instance = self.get_object()
+        matching_queryset = Matching.objects.filter(grantee=account_instance)
+        matching_serializer = MatchingSerializer(matching_queryset, many=True)
+
+        return Response(data=matching_serializer.data, status=status.HTTP_200_OK)
 
 
 
