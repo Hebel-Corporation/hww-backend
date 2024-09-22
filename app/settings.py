@@ -132,7 +132,12 @@ DATABASES = {
     }
 }
 
-DATABASES['default'] = dj_database_url.parse(config('PG_DATABASE_URL'))
+# Get environment mode (development or production)
+ENV_MODE = config('ENV_MODE', default='development')
+
+if ENV_MODE == 'production':
+    # Use PostgreSQL in production
+    DATABASES['default'] = dj_database_url.parse(config('PG_DATABASE_URL'))
 
 
 # Password validation
