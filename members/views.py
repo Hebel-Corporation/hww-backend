@@ -342,9 +342,13 @@ class AccountViewSet(viewsets.ModelViewSet) :
     @action(detail=True, methods=['get'], url_path='member-downlines')
     def member_downlines(self, request, pk):
         account_instance = self.get_object()
-        account_serializer = AccountSerializer(account_instance.get_descendants(include_self=False), many=True, exclude=['balance', 'rewards', 'matching_count', 'referral_count', 'lft', 'rght', 'tree_id', 'level', 'office'])
 
-        return Response(data=account_serializer.data, status=status.HTTP_200_OK)
+        paginator = self.pagination_class()
+        paginated_queryset = paginator.paginate_queryset(account_instance.get_descendants(include_self=False), request)
+
+        account_serializer = AccountSerializer(paginated_queryset, many=True, exclude=['balance', 'rewards', 'matching_count', 'referral_count', 'lft', 'rght', 'tree_id', 'level', 'office'])
+
+        return paginator.get_paginated_response(account_serializer.data)
 
 
 
@@ -361,9 +365,12 @@ class AccountViewSet(viewsets.ModelViewSet) :
     def member_referrals(self, request, pk):
         account_instance = self.get_object()
         referral_queryset = Referral.objects.filter(grantee=account_instance)
-        referral_serializer = ReferralSerializer(referral_queryset, many=True)
 
-        return Response(data=referral_serializer.data, status=status.HTTP_200_OK)
+        paginator = self.pagination_class()
+        paginated_queryset = paginator.paginate_queryset(referral_queryset, request)
+        referral_serializer = ReferralSerializer(paginated_queryset, many=True)
+
+        return paginator.get_paginated_response(referral_serializer.data)
     
 
 
@@ -372,9 +379,12 @@ class AccountViewSet(viewsets.ModelViewSet) :
     def member_matchings(self, request, pk):
         account_instance = self.get_object()
         matching_queryset = Matching.objects.filter(grantee=account_instance)
-        matching_serializer = MatchingSerializer(matching_queryset, many=True)
 
-        return Response(data=matching_serializer.data, status=status.HTTP_200_OK)
+        paginator = self.pagination_class()
+        paginated_queryset = paginator.paginate_queryset(matching_queryset, request)
+        matching_serializer = MatchingSerializer(paginated_queryset, many=True)
+
+        return paginator.get_paginated_response(matching_serializer.data)
 
 
 

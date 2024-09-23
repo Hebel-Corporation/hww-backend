@@ -7,6 +7,7 @@ from .models import CustomUser
 from rest_framework.permissions import IsAuthenticated
 from .serializers import CustomTokenObtainPairSerializer, CustomGroupSerializer,CustomUserSerializer
 from members.serializers import AccountSerializer
+from app.pagination import CustomPagination
 
 
 class CustomTokenObtainPairView(TokenObtainPairView):
@@ -28,14 +29,19 @@ class CustomUserViewSet(viewsets.ModelViewSet):
     queryset= CustomUser.objects.all()
     serializer_class = CustomUserSerializer
     permission_classes = [IsAuthenticated]
+    pagination_class = CustomPagination
 
 
     @action(detail=False, methods=['get'], url_path='members')
     def members(self,request):
         member_queryset = CustomUser.objects.filter(user_type='member')
-        member_serializer = CustomUserSerializer(member_queryset, many=True, exclude=['username', 'password'])
 
-        return Response(data=member_serializer.data, status=status.HTTP_200_OK)
+        paginator = self.pagination_class()
+        paginated_queryset = paginator.paginate_queryset(member_queryset, request)
+
+        member_serializer = CustomUserSerializer(paginated_queryset, many=True, exclude=['username', 'password'])
+
+        return paginator.get_paginated_response(member_serializer.data)
     
 
 
