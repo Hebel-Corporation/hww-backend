@@ -1,10 +1,12 @@
 from django.shortcuts import get_object_or_404
 from django.db import transaction
+from django.db.models import Q
 from rest_framework import viewsets, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.exceptions import ValidationError
+from rest_framework.filters import SearchFilter
+from django_filters.rest_framework import DjangoFilterBackend
 from members.models import *
 from .serializers import *
 from authentication.serializers import CustomUserSerializer, CustomGroupSerializer
@@ -32,6 +34,8 @@ class LocationViewSet(viewsets.ModelViewSet) :
     queryset = Location.objects.all()
     serializer_class = LocationSerializer
     permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, SearchFilter]
+    search_fields = ['name', 'country__name', 'country__code']
 
     def create(self, request):
         api_data = request.data
@@ -48,12 +52,25 @@ class OfficeViewSet(viewsets.ModelViewSet) :
     queryset = Office.objects.all()
     serializer_class = OfficeSerializer
     permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, SearchFilter]
+    search_fields = ['name', 'office_code', 'location__name']
 
 
     @action(detail=True, methods=['get'], url_path='staffs')
-    def staffs(self,request, pk=None):
-        instance = self.get_object()
-        staff_queryset = instance.offices_set.filter(user_type='staff')
+    def staffs(self,request, pk):
+        instance = get_object_or_404(Office, id=pk)
+        search_value = request.query_params.get('search', '')
+
+        if search_value:
+            staff_queryset = instance.offices_set.filter(
+                Q(first_name__icontains=search_value) |
+                Q(last_name__icontains=search_value) |
+                Q(company_id__icontains=search_value),
+                user_type='staff'
+            )
+        else:
+            staff_queryset = instance.offices_set.filter(user_type='staff')
+
         staff_serializer = CustomUserSerializer(staff_queryset, many=True, exclude=['username', 'password'])
 
         return Response(data=staff_serializer.data, status=status.HTTP_200_OK)
@@ -342,10 +359,20 @@ class AccountViewSet(viewsets.ModelViewSet) :
     @action(detail=True, methods=['get'], url_path='member-downlines')
     def member_downlines(self, request, pk):
         account_instance = self.get_object()
+        search_value = request.query_params.get('search', '')
 
         paginator = self.pagination_class()
-        paginated_queryset = paginator.paginate_queryset(account_instance.get_descendants(include_self=False), request)
+        downline_queryset = account_instance.get_descendants(include_self=False)
 
+        if search_value:
+            downline_queryset = downline_queryset.filter(
+                Q(member__first_name__icontains=search_value) |
+                Q(member__last_name__icontains=search_value) |
+                Q(member__company_id__icontains=search_value) |
+                Q(company_id__icontains=search_value) 
+            )
+
+        paginated_queryset = paginator.paginate_queryset(downline_queryset, request)
         account_serializer = AccountSerializer(paginated_queryset, many=True, exclude=['balance', 'rewards', 'matching_count', 'referral_count', 'lft', 'rght', 'tree_id', 'level', 'office'])
 
         return paginator.get_paginated_response(account_serializer.data)
@@ -364,7 +391,18 @@ class AccountViewSet(viewsets.ModelViewSet) :
     @action(detail=True, methods=['get'], url_path='member-referrals')
     def member_referrals(self, request, pk):
         account_instance = self.get_object()
-        referral_queryset = Referral.objects.filter(grantee=account_instance)
+        search_value = request.query_params.get('search', '')
+
+        if search_value:
+            referral_queryset = Referral.objects.filter(
+                Q(downline__member__first_name__icontains=search_value) |
+                Q(downline__member__last_name__icontains=search_value) |
+                Q(downline__member__company_id__icontains=search_value) |
+                Q(downline__company_id__icontains=search_value),
+                grantee=account_instance 
+            )
+        else:
+            referral_queryset = Referral.objects.filter(grantee=account_instance)
 
         paginator = self.pagination_class()
         paginated_queryset = paginator.paginate_queryset(referral_queryset, request)
@@ -378,7 +416,18 @@ class AccountViewSet(viewsets.ModelViewSet) :
     @action(detail=True, methods=['get'], url_path='member-matchings')
     def member_matchings(self, request, pk):
         account_instance = self.get_object()
-        matching_queryset = Matching.objects.filter(grantee=account_instance)
+        search_value = request.query_params.get('search', '')
+
+        if search_value:
+            matching_queryset = Matching.objects.filter(
+                Q(downlines__member__first_name__icontains=search_value) |
+                Q(downlines__member__last_name__icontains=search_value) |
+                Q(downlines__member__company_id__icontains=search_value) |
+                Q(downlines__company_id__icontains=search_value),
+                grantee=account_instance 
+            ).distinct()
+        else:
+            matching_queryset = Matching.objects.filter(grantee=account_instance)
 
         paginator = self.pagination_class()
         paginated_queryset = paginator.paginate_queryset(matching_queryset, request)
