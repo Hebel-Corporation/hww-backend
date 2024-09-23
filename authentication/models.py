@@ -4,6 +4,7 @@ from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.base_user import BaseUserManager
 from django.utils.translation import gettext as _
 
+
 from django.conf import settings
 
 
@@ -65,3 +66,4 @@ class CustomUser(AbstractUser):
     
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
+
