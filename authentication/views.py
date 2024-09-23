@@ -8,6 +8,7 @@ from rest_framework.permissions import IsAuthenticated
 from .serializers import CustomTokenObtainPairSerializer, CustomGroupSerializer,CustomUserSerializer
 from members.serializers import AccountSerializer
 from app.pagination import CustomPagination
+from django.db.models import Q
 
 
 class CustomTokenObtainPairView(TokenObtainPairView):
@@ -34,7 +35,17 @@ class CustomUserViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], url_path='members')
     def members(self,request):
-        member_queryset = CustomUser.objects.filter(user_type='member')
+        search_value = request.query_params.get('search', '')
+
+        if search_value:
+            member_queryset = CustomUser.objects.filter(
+                Q(first_name__icontains=search_value) |
+                Q(last_name__icontains=search_value) |
+                Q(company_id__icontains=search_value),
+                user_type='member'
+            )
+        else:
+            member_queryset = CustomUser.objects.filter(user_type='member')
 
         paginator = self.pagination_class()
         paginated_queryset = paginator.paginate_queryset(member_queryset, request)
