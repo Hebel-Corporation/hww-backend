@@ -200,9 +200,9 @@ class OfficeViewSet(viewsets.ModelViewSet) :
     @action(detail=True, methods=['get'], url_path='check-register-code-validity')
     def check_register_code_validity(self,request, pk=None):
         office_instance = self.get_object()
-        is_valid = office_instance.office_codes.filter(is_valid=True).exists()
-
-        return Response(data=is_valid, status=status.HTTP_200_OK)
+        has_valid_code = office_instance.office_codes.filter(is_valid=True).exists()
+        
+        return Response(data=has_valid_code, status=status.HTTP_200_OK)
 
 
 
@@ -237,8 +237,6 @@ class OfficeViewSet(viewsets.ModelViewSet) :
     def create(self, request):
         office_data = request.data.get('office')
         staff_data = request.data.get('staff')
-
-        print("STAFF DATA ========", staff_data)
 
         # Récupération de l'instance Location
         location_instance = get_object_or_404(Location, id=office_data.pop('location'))
