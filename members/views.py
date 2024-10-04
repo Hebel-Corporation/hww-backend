@@ -319,7 +319,7 @@ class AccountViewSet(viewsets.ModelViewSet) :
             try :
                 sponsor_account = Account.objects.get(company_id=api_data.get('sponsor_account', None))
 
-                if not sponsor_account in referral_account.get_descendants(include_self=True) :
+                if not sponsor_account in referral_account.get_descendants(include_self=True).order_by('created_at') :
                     return Response(data={
                         "is_valid" : False,
                         "error_type": "sponsor_id",
@@ -360,7 +360,7 @@ class AccountViewSet(viewsets.ModelViewSet) :
         search_value = request.query_params.get('search', '')
 
         paginator = self.pagination_class()
-        downline_queryset = account_instance.get_descendants(include_self=False)
+        downline_queryset = account_instance.get_descendants(include_self=False).order_by('created_at')
 
         if search_value:
             downline_queryset = downline_queryset.filter(

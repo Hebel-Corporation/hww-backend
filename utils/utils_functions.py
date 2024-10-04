@@ -82,7 +82,7 @@ def create_pairing_bonuses(new_member_account, upline, position:str):
         if new_downline_leg_length - 1 < opposite_leg_lenght:
             from django.shortcuts import get_object_or_404
             from members.models import Subscription
-            pairing_downline = list(opposite_direct_downline.get_descendants(include_self=True))[new_downline_leg_length-1]
+            pairing_downline = list(opposite_direct_downline.get_descendants(include_self=True)).order_by('created_at')[new_downline_leg_length-1]
 
             matchings_count = upline.get_matching_count + 1
             matching_price = MatchingPrice.objects.filter(begin__lte=matchings_count,end__gte=matchings_count).first()
