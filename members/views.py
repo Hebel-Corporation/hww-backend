@@ -435,6 +435,22 @@ class AccountViewSet(viewsets.ModelViewSet) :
 
 
 
+
+    @action(detail=True, methods=['get'], url_path='account-network')
+    def account_network(self, request, pk):
+        account_instance = self.get_object()
+        referral_serializer = AccountSerializer(account_instance.referral_account, many=False, exclude=['lft', 'rght', 'tree_id', 'level'])
+        sponsor_serializer = AccountSerializer(account_instance.parent, many=False, exclude=['lft', 'rght', 'tree_id', 'level'])
+        dowlines_serializer = AccountSerializer(account_instance.get_children(), many=True, exclude=['lft', 'rght', 'tree_id', 'level'])
+
+        return Response(data={
+            'referral': referral_serializer.data,
+            'sponsor': sponsor_serializer.data,
+            'children': dowlines_serializer.data
+        }, status=status.HTTP_200_OK)
+
+
+
 class SubscriptionViewSet(viewsets.ModelViewSet) :
     queryset = Subscription.objects.all()
     serializer_class = SubscriptionSerializer
