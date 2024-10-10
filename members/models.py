@@ -140,6 +140,10 @@ class Account(MPTTModel) :
     @property
     def get_referral_count(self):
         return Referral.objects.filter(grantee=self).count()
+    
+
+    def has_already_a_matched(self, downline):
+        return Matching.objects.filter(grantee=self, downlines__in=[downline]).exists()
 
 
 

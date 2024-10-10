@@ -319,7 +319,7 @@ class AccountViewSet(viewsets.ModelViewSet) :
             try :
                 sponsor_account = Account.objects.get(company_id=api_data.get('sponsor_account', None))
 
-                if not sponsor_account in referral_account.get_descendants(include_self=True) :
+                if not sponsor_account in referral_account.get_descendants(include_self=True).order_by('created_at') :
                     return Response(data={
                         "is_valid" : False,
                         "error_type": "sponsor_id",
@@ -360,7 +360,7 @@ class AccountViewSet(viewsets.ModelViewSet) :
         search_value = request.query_params.get('search', '')
 
         paginator = self.pagination_class()
-        downline_queryset = account_instance.get_descendants(include_self=False)
+        downline_queryset = account_instance.get_descendants(include_self=False).order_by('created_at')
 
         if search_value:
             downline_queryset = downline_queryset.filter(
@@ -432,6 +432,22 @@ class AccountViewSet(viewsets.ModelViewSet) :
         matching_serializer = MatchingSerializer(paginated_queryset, many=True)
 
         return paginator.get_paginated_response(matching_serializer.data)
+
+
+
+
+    @action(detail=True, methods=['get'], url_path='account-network')
+    def account_network(self, request, pk):
+        account_instance = self.get_object()
+        referral_serializer = AccountSerializer(account_instance.referral_account, many=False, exclude=['lft', 'rght', 'tree_id', 'level'])
+        sponsor_serializer = AccountSerializer(account_instance.parent, many=False, exclude=['lft', 'rght', 'tree_id', 'level'])
+        dowlines_serializer = AccountSerializer(account_instance.get_children(), many=True, exclude=['lft', 'rght', 'tree_id', 'level'])
+
+        return Response(data={
+            'referral': referral_serializer.data,
+            'sponsor': sponsor_serializer.data,
+            'children': dowlines_serializer.data
+        }, status=status.HTTP_200_OK)
 
 
 
