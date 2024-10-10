@@ -80,22 +80,25 @@ def create_pairing_bonuses(new_member_account, upline, position:str):
         opposite_leg_lenght = opposite_direct_downline.get_descendants(include_self=True).count() if opposite_direct_downline else 0 #opposite_direct_downline.get_descendant_count() + 1
     
         if new_downline_leg_length - 1 < opposite_leg_lenght:
-            from django.shortcuts import get_object_or_404
-            from members.models import Subscription
+
             pairing_downline = list(opposite_direct_downline.get_descendants(include_self=True)).order_by('created_at')[new_downline_leg_length-1]
 
-            matchings_count = upline.get_matching_count + 1
-            matching_price = MatchingPrice.objects.filter(begin__lte=matchings_count,end__gte=matchings_count).first()
-            new_account_subscription = get_object_or_404(Subscription, member_account=new_member_account)
-            amount = new_account_subscription.package.price * matching_price.package_price_percent
+            if not upline.has_already_a_matched(new_member_account) and not upline.has_already_a_matched(pairing_downline) :
+                from django.shortcuts import get_object_or_404
+                from members.models import Subscription
 
-            matching =  Matching.objects.create(
-                grantee = upline,
-                amount = amount 
-            )
+                matchings_count = upline.get_matching_count + 1
+                matching_price = MatchingPrice.objects.filter(begin__lte=matchings_count,end__gte=matchings_count).first()
+                new_account_subscription = get_object_or_404(Subscription, member_account=new_member_account)
+                amount = new_account_subscription.package.price * matching_price.package_price_percent
 
-            matching.downlines.set([new_member_account,pairing_downline])
-            matching.save()
+                matching =  Matching.objects.create(
+                    grantee = upline,
+                    amount = amount 
+                )
+
+                matching.downlines.set([new_member_account,pairing_downline])
+                matching.save()
     
         create_pairing_bonuses(new_member_account,upline=upline.parent,position=upline.position)
 
