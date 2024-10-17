@@ -39,7 +39,7 @@ class CustomUserViewSet(viewsets.ModelViewSet):
 
 
      # This is the custom action for changing the password
-    @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated])
+    @action(detail=False, methods=['put'], permission_classes=[IsAuthenticated])
     def change_password(self, request, pk=None):
         serializer = ChangePasswordSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
@@ -48,7 +48,7 @@ class CustomUserViewSet(viewsets.ModelViewSet):
             if user.has_default_password :
                 user.has_default_password = False
             user.save()
-            return Response({"detail": "Password updated successfully"}, status=status.HTTP_200_OK)
+            return Response({"message": "Mot de passe changé avez succès"}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
