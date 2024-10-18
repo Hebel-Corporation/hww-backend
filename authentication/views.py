@@ -5,7 +5,12 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from django.contrib.auth.models import Group
 from .models import CustomUser
 from rest_framework.permissions import IsAuthenticated
-from .serializers import CustomTokenObtainPairSerializer, CustomGroupSerializer,CustomUserSerializer
+from .serializers import (
+    CustomTokenObtainPairSerializer, 
+    CustomGroupSerializer,
+    CustomUserSerializer,
+    ChangePasswordSerializer
+    )
 from members.serializers import AccountSerializer
 from app.pagination import CustomPagination
 from django.db.models import Q
@@ -31,6 +36,22 @@ class CustomUserViewSet(viewsets.ModelViewSet):
     serializer_class = CustomUserSerializer
     permission_classes = [IsAuthenticated]
     pagination_class = CustomPagination
+
+
+     # This is the custom action for changing the password
+    @action(detail=False, methods=['put'], permission_classes=[IsAuthenticated])
+    def change_password(self, request, pk=None):
+        serializer = ChangePasswordSerializer(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            user = request.user
+            user.set_password(serializer.validated_data['new_password'])
+            if user.has_default_password :
+                user.has_default_password = False
+            user.save()
+            return Response({"message": "Mot de passe changé avez succès"}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
 
 
     @action(detail=False, methods=['get'], url_path='members')

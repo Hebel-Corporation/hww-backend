@@ -29,6 +29,7 @@ class CustomUserManager(BaseUserManager):
         extra_fields.setdefault('is_superuser', True)
         extra_fields.setdefault('is_active', True)
         extra_fields.setdefault('user_type', 'admin')
+        extra_fields.setdefault('has_default_password', False)
         admin_count = self.model.objects.filter(user_type='admin').count()
         extra_fields.setdefault('company_id', f'{settings.COMPANY_INITIAL}-{settings.SUPERUSER_COMPANY_ID_INITIAL}{admin_count+1}')
 
@@ -60,6 +61,7 @@ class CustomUser(AbstractUser):
     user_type = models.TextField(max_length=10, choices=USER_TYPE_CHOICES, default='member')
     birthday = models.DateField(null=True, blank=True)
     gender = models.TextField(max_length=5, choices=USER_GENDER_TYPE, blank=True, null=True)
+    has_default_password = models.BooleanField(default=True)
     office = models.ForeignKey('members.Office', verbose_name=_("Office Recorder"), related_name="offices_set", blank=True, null=True, on_delete=models.SET_NULL)
 
     objects = CustomUserManager()
