@@ -81,7 +81,7 @@ def create_pairing_bonuses(new_member_account, upline, position:str):
     
         if new_downline_leg_length - 1 < opposite_leg_lenght:
 
-            pairing_downline = list(opposite_direct_downline.get_descendants(include_self=True)).order_by('created_at')[new_downline_leg_length-1]
+            pairing_downline = list(opposite_direct_downline.get_descendants(include_self=True).order_by('created_at'))[new_downline_leg_length-1]
 
             if not upline.has_already_a_matched(new_member_account) and not upline.has_already_a_matched(pairing_downline) :
                 from django.shortcuts import get_object_or_404
