@@ -40,7 +40,8 @@ class CustomUserSerializer(serializers.ModelSerializer):
             'user_type',
             'office',
             'groups',
-            'has_default_password'
+            'has_default_password',
+            'date_joined'
             ]
         extra_kwargs = {
             'password': {'write_only' : True},
