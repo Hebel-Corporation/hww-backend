@@ -1,6 +1,7 @@
 from django.shortcuts import get_object_or_404
 from django.db import transaction
 from django.db.models import Q
+from django.core.exceptions import ValidationError
 from rest_framework import viewsets, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
@@ -17,8 +18,9 @@ from utils.utils_functions import create_account
 
 from config.serializers import SubscriptionCodeSerializer
 from config.models import SubscriptionCode
-from prices.models import Referral, Matching
-from prices.serializers import ReferralSerializer, MatchingSerializer
+from prices.models import Referral, Matching, Payment, PurchaseBonus
+from prices.serializers import ReferralSerializer, MatchingSerializer, PaymentSerializer
+from prices.filters import MatchingFilter
 
 from django.conf import settings
 
@@ -231,6 +233,44 @@ class OfficeViewSet(viewsets.ModelViewSet) :
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         
         return Response(data=SubscriptionCodeSerializer(subscription_code).data,status=status.HTTP_201_CREATED)
+
+
+
+
+    @action(detail=True, methods=['post'], url_path='register-member-payment')
+    def register_member_payment(self,request, pk=None):
+
+        office_instance = self.get_object()
+
+        api_data = request.data
+
+        try :
+            with transaction.atomic():
+                account_instance = get_object_or_404(Account, id=api_data.get('account', None))
+                bonuse_ids = api_data.get('bonuses', [])
+                payment_type = api_data.get('payment_type')
+
+                if payment_type == 'matching_payment' :
+                    Matching.objects.filter(id__in=bonuse_ids).update(is_paid=True)
+                elif payment_type == 'referral_payment' :
+                    Referral.objects.filter(id__in=bonuse_ids).update(is_paid=True)
+                elif payment_type == 'purchase_payment' :
+                    PurchaseBonus.objects.filter(id__in=bonuse_ids).update(is_paid=True)
+                else :
+                    raise ValidationError("Le type de payment est obligatoire !") 
+
+                payment = Payment.objects.create(
+                    office = office_instance,
+                    account = account_instance,
+                    amount = api_data.get('amount'),
+                    payment_type = payment_type,
+                    bonuses = bonuse_ids
+                )
+                
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+        return Response(data=PaymentSerializer(payment).data,status=status.HTTP_201_CREATED)
     
 
 
@@ -402,8 +442,12 @@ class AccountViewSet(viewsets.ModelViewSet) :
         else:
             referral_queryset = Referral.objects.filter(grantee=account_instance)
 
+        # Appliquer le filtre Django Filter
+        filter_instance = MatchingFilter(request.GET, queryset=referral_queryset)
+        filtered_queryset = filter_instance.qs  # Récupère les résultats filtrés
+
         paginator = self.pagination_class()
-        paginated_queryset = paginator.paginate_queryset(referral_queryset, request)
+        paginated_queryset = paginator.paginate_queryset(filtered_queryset, request)
         referral_serializer = ReferralSerializer(paginated_queryset, many=True)
 
         return paginator.get_paginated_response(referral_serializer.data)
@@ -415,6 +459,7 @@ class AccountViewSet(viewsets.ModelViewSet) :
     def member_matchings(self, request, pk):
         account_instance = self.get_object()
         search_value = request.query_params.get('search', '')
+        # search_value = request.query_params.get('search', '')
 
         if search_value:
             matching_queryset = Matching.objects.filter(
@@ -427,11 +472,39 @@ class AccountViewSet(viewsets.ModelViewSet) :
         else:
             matching_queryset = Matching.objects.filter(grantee=account_instance)
 
+
+        # Appliquer le filtre Django Filter
+        filter_instance = MatchingFilter(request.GET, queryset=matching_queryset)
+        filtered_queryset = filter_instance.qs  # Récupère les résultats filtrés
+
         paginator = self.pagination_class()
-        paginated_queryset = paginator.paginate_queryset(matching_queryset, request)
+        paginated_queryset = paginator.paginate_queryset(filtered_queryset, request)
         matching_serializer = MatchingSerializer(paginated_queryset, many=True)
 
         return paginator.get_paginated_response(matching_serializer.data)
+    
+
+
+
+
+    @action(detail=True, methods=['get'], url_path='member-payments')
+    def member_payments(self, request, pk):
+        account_instance = self.get_object()
+        search_value = request.query_params.get('search', '')
+
+        if search_value:
+            payment_queryset = Payment.objects.filter(
+                Q(payment_type__icontains=search_value),
+                account=account_instance 
+            ).distinct()
+        else:
+            payment_queryset = Payment.objects.filter(account=account_instance)
+
+        paginator = self.pagination_class()
+        paginated_queryset = paginator.paginate_queryset(payment_queryset, request)
+        payment_serializer = PaymentSerializer(paginated_queryset, many=True)
+
+        return paginator.get_paginated_response(payment_serializer.data)
 
 
 

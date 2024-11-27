@@ -48,10 +48,20 @@ class Reward(models.Model) :
 
 
 class Payment(models.Model):
+
+    PAYMENT_TYPE_CHOICES = (
+        ('matching_payment', "Paiement d'équilibres"),
+        ('referral_payment', "Paiement de parrainages"),
+        ('purchase_payment', "Paiement de bonus d'achat"),
+    )
+
     id = models.UUIDField(_("Unique ID"), primary_key=True, default=uuid.uuid4, editable=False)
     account = models.ForeignKey("members.Account", verbose_name=_("Grantee account"), related_name="payments", on_delete=models.CASCADE)
     amount = models.DecimalField(_('Amount'), max_digits=6, decimal_places=2)
+    payment_type = models.CharField(max_length=50, choices=PAYMENT_TYPE_CHOICES, null=True)
+    bonuses = models.JSONField(default=list)
+    office = models.ForeignKey("members.Office", null=True, on_delete=models.SET_NULL)
     created_at = models.DateField(_('Paid on'), auto_now_add=True)
 
     def __str__(self):
-        return f"Payment of {self.amount} by {self.client.name} on {self.paid_on}"
+        return f"Payment of {self.amount} by {self.account.member.first_name} on {self.created_at}"
