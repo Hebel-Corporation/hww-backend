@@ -20,7 +20,7 @@ from config.serializers import SubscriptionCodeSerializer
 from config.models import SubscriptionCode
 from prices.models import Referral, Matching, Payment, PurchaseBonus
 from prices.serializers import ReferralSerializer, MatchingSerializer, PaymentSerializer
-from prices.filters import MatchingFilter
+from prices.filters import MatchingFilter, ReferralFilter
 
 from django.conf import settings
 
@@ -443,7 +443,7 @@ class AccountViewSet(viewsets.ModelViewSet) :
             referral_queryset = Referral.objects.filter(grantee=account_instance)
 
         # Appliquer le filtre Django Filter
-        filter_instance = MatchingFilter(request.GET, queryset=referral_queryset)
+        filter_instance = ReferralFilter(request.GET, queryset=referral_queryset)
         filtered_queryset = filter_instance.qs  # Récupère les résultats filtrés
 
         paginator = self.pagination_class()
