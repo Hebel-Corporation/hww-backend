@@ -1,8 +1,8 @@
-from .models import Referral,Matching
+from .models import Referral, Matching, Payment
 from rest_framework import serializers
 from drf_queryfields import QueryFieldsMixin
 
-from members.serializers import AccountSerializer
+from members.serializers import AccountSerializer, OfficeSerializer
 
 class ReferralSerializer(QueryFieldsMixin, serializers.ModelSerializer):
 
@@ -19,4 +19,15 @@ class MatchingSerializer(QueryFieldsMixin, serializers.ModelSerializer):
 
     class Meta:
         model = Matching
+        fields = '__all__'
+
+
+
+class PaymentSerializer(QueryFieldsMixin, serializers.ModelSerializer):
+
+    payment_type_display = serializers.CharField(source='get_payment_type_display', read_only=True)
+    office = OfficeSerializer(many=False)
+
+    class Meta:
+        model = Payment
         fields = '__all__'
