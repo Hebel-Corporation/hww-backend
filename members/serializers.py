@@ -86,6 +86,7 @@ class AccountSerializer(QueryFieldsMixin, serializers.ModelSerializer):
     downline_count = serializers.SerializerMethodField()
     matching_count = serializers.SerializerMethodField()
     referral_count = serializers.SerializerMethodField()
+    puchase_bonus_count = serializers.SerializerMethodField()
     member = serializers.SerializerMethodField()
 
     class Meta:
@@ -115,6 +116,10 @@ class AccountSerializer(QueryFieldsMixin, serializers.ModelSerializer):
 
     def get_referral_count(self, instance):
         return instance.get_referral_count
+    
+
+    def get_puchase_bonus_count(self, instance):
+        return instance.get_puchase_bonus_count
 
 
 

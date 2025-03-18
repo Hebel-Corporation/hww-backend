@@ -21,6 +21,8 @@ from config.models import SubscriptionCode
 from prices.models import Referral, Matching, Payment, PurchaseBonus
 from prices.serializers import ReferralSerializer, MatchingSerializer, PaymentSerializer
 from prices.filters import MatchingFilter, ReferralFilter
+from stock.models import SaleDetail
+from stock.serializers import SaleDetailSerializer
 
 from django.conf import settings
 
@@ -56,6 +58,24 @@ class OfficeViewSet(viewsets.ModelViewSet) :
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, SearchFilter]
     search_fields = ['name', 'office_code', 'location__name']
+
+
+    @action(detail=True, methods=['get'], url_path='statistics')
+    def statistics(self,request, pk):
+        office_instance = get_object_or_404(Office, id=pk)
+        search_value = request.query_params.get('search', '')
+
+        if office_instance.office_type == 'head_office':
+            subscriptions = Subscription.objects.filter(office=office_instance)
+        elif office_instance.office_type == 'sub_office':
+            subscriptions = Subscription.objects.filter(office=office_instance)
+
+        stat_data = {
+            "subscriptions": subscriptions.count()
+        }
+
+        return Response(data=stat_data, status=status.HTTP_200_OK)
+
 
 
     @action(detail=True, methods=['get'], url_path='staffs')
@@ -185,6 +205,33 @@ class OfficeViewSet(viewsets.ModelViewSet) :
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         
         return Response(data=AccountSerializer(account).data,status=status.HTTP_201_CREATED)
+    
+
+
+    @action(detail=True, methods=['post'], url_path='member-registration-purchase')
+    def create_member_purchase(self,request, pk=None):
+
+        office_instance = self.get_object()
+
+        api_data = request.data
+        account_id = api_data.get('accountID', None)
+        amount = api_data.get('amount', 0)
+
+        try :
+            with transaction.atomic():
+
+                account = get_object_or_404(Account, company_id=account_id)
+
+                sale_detail = SaleDetail.objects.create(
+                    member_account = account,
+                    amount = amount,
+                    office = office_instance
+                )
+                
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+        return Response(data=SaleDetailSerializer(sale_detail).data,status=status.HTTP_201_CREATED)
     
 
 
@@ -414,6 +461,26 @@ class AccountViewSet(viewsets.ModelViewSet) :
         account_serializer = AccountSerializer(paginated_queryset, many=True, exclude=['balance', 'rewards', 'matching_count', 'referral_count', 'lft', 'rght', 'tree_id', 'level', 'office'])
 
         return paginator.get_paginated_response(account_serializer.data)
+
+
+    
+
+    @action(detail=True, methods=['get'], url_path='sponsor-accounts')
+    def sponsor_accounts(self, request, pk):
+        account_instance = self.get_object()
+
+        downline_data = [
+            {
+                "id": account.id,
+                "full_name": f"{account.member.first_name} {account.member.last_name}",
+                "company_id": account.company_id,
+                "descendant_count": account.get_descendants(include_self=False).count()
+            }
+            for account in account_instance.get_descendants(include_self=True).order_by('created_at')
+            if account.get_children().count() < 2
+        ]
+
+        return Response(data=downline_data, status=status.HTTP_200_OK)
 
 
 

@@ -67,6 +67,7 @@ INSTALLED_APPS = [
     'config',
     'members',
     'prices',
+    'stock',
 ]
 
 MIDDLEWARE = [
