@@ -10,7 +10,7 @@ python manage.py collectstatic --no-input
 python manage.py migrate
 
 # Charger les fixtures
-python manage.py loaddata fixtures/*.json
+#python manage.py loaddata fixtures/*.json
 
 if [[ "${CREATE_SUPERUSER,,}" == "true" ]]; then
     if [[ -z "$HWW_SUPERUSER_USERNAME" || -z "$HWW_SUPERUSER_PASSWORD" ]]; then
