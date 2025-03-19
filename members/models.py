@@ -3,7 +3,7 @@ from django.db import models, transaction
 from django.utils.translation import gettext as _
 # from django.utils.translation import gettext_lazy as _
 from mptt.models import MPTTModel, TreeForeignKey
-from prices.models import Referral, Matching, PurchaseBonus
+from prices.models import Referral, Matching#, PurchaseBonus
 from config.models import SubscriptionCode
 
 from decimal import Decimal
@@ -144,7 +144,7 @@ class Account(MPTTModel) :
 
     @property
     def get_puchase_bonus_count(self):
-        return PurchaseBonus.objects.filter(grantee=self).count()
+        return 0 #PurchaseBonus.objects.filter(grantee=self).count()
     
 
     def has_already_a_matched(self, downline):
@@ -165,7 +165,7 @@ class Account(MPTTModel) :
     def get_balance(self):
         referrals = Referral.objects.filter(grantee=self, is_paid=False) # Récupérer les referrals associés à un compte
         matchings = Matching.objects.filter(grantee=self, is_paid=False) # Récupérer les matchings associés à un compte
-        purchase_bonus = PurchaseBonus.objects.filter(grantee=self, is_paid=False) # Récupérer les bonus sur achat des produits à un compte
+        purchase_bonus =[] #PurchaseBonus.objects.filter(grantee=self, is_paid=False) # Récupérer les bonus sur achat des produits à un compte
 
         # Combiner les résultats
         all_bonuses = list(referrals) + list(matchings) + list(purchase_bonus)

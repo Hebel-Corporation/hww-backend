@@ -20,9 +20,9 @@ class ReferralFilter(filters.FilterSet):
         fields = ['is_paid']  # Liste des champs filtrables
 
 
-class PurchaseFilter(filters.FilterSet):
-    is_paid = filters.BooleanFilter(field_name="is_paid", lookup_expr="exact")  # Filtrer exactement sur is_paid
+# class PurchaseFilter(filters.FilterSet):
+#     is_paid = filters.BooleanFilter(field_name="is_paid", lookup_expr="exact")  # Filtrer exactement sur is_paid
 
-    class Meta:
-        model = PurchaseBonus
-        fields = ['is_paid']  # Liste des champs filtrables
+#     class Meta:
+#         model = PurchaseBonus
+#         fields = ['is_paid']  # Liste des champs filtrables
