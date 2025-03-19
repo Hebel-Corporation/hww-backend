@@ -91,7 +91,7 @@ class Account(MPTTModel) :
     referral_account = models.ForeignKey('self', verbose_name=_("Referral account"), null=True, blank=True, on_delete=models.SET_NULL)
     parent = TreeForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='children')
     position = models.CharField(_("Position at Sponsor"), choices=POSITION, default='left', null=True, blank=True, max_length=10, editable=False)
-    pvs = models.IntegerField(editable=False)
+    # pvs = models.IntegerField(editable=False)
     office = models.ForeignKey('members.Office', verbose_name=_("Account Office Recorder"), related_name="account_offices_set", blank=True, null=True, on_delete=models.SET_NULL)
     rewards = models.ManyToManyField("prices.Reward", verbose_name=_("Account rewards"), blank=True)
     is_active = models.BooleanField(_('Is active'), default=True)
@@ -149,6 +149,15 @@ class Account(MPTTModel) :
 
     def has_already_a_matched(self, downline):
         return Matching.objects.filter(grantee=self, downlines__in=[downline]).exists()
+
+    @property
+    def get_pvs(self):
+        subcriptions = Subscription.objects.filter(member_account__in=self.get_descendants(include_self=True).order_by('created_at'))
+        pvs = 0
+        for subcription in subcriptions :
+            pvs += subcription.package.price
+
+        return pvs
 
 
 

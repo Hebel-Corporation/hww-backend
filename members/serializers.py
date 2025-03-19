@@ -83,6 +83,7 @@ class PackageSerializer(QueryFieldsMixin, serializers.ModelSerializer):
 class AccountSerializer(QueryFieldsMixin, serializers.ModelSerializer):
 
     balance = serializers.SerializerMethodField()
+    pvs = serializers.SerializerMethodField()
     downline_count = serializers.SerializerMethodField()
     matching_count = serializers.SerializerMethodField()
     referral_count = serializers.SerializerMethodField()
@@ -108,6 +109,9 @@ class AccountSerializer(QueryFieldsMixin, serializers.ModelSerializer):
 
     def get_balance(self, instance):
         return instance.get_balance
+    
+    def get_pvs(self, instance):
+        return instance.get_pvs
     
 
     def get_matching_count(self, instance):
