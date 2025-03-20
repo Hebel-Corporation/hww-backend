@@ -20,7 +20,7 @@ from config.serializers import SubscriptionCodeSerializer
 from config.models import SubscriptionCode
 from prices.models import Referral, Matching, Payment#, PurchaseBonus
 from prices.serializers import ReferralSerializer, MatchingSerializer, PaymentSerializer#, PurchaseBonusSerializer
-from prices.filters import MatchingFilter, ReferralFilter, PurchaseFilter
+from prices.filters import MatchingFilter, ReferralFilter#, PurchaseFilter
 from stock.models import SaleDetail
 from stock.serializers import SaleDetailSerializer
 
