@@ -3,7 +3,7 @@ from django.db import models, transaction
 from django.utils.translation import gettext as _
 # from django.utils.translation import gettext_lazy as _
 from mptt.models import MPTTModel, TreeForeignKey
-from prices.models import Referral, Matching, PurchaseBonus
+from prices.models import Referral, Matching#, PurchaseBonus
 from config.models import SubscriptionCode
 
 from decimal import Decimal
@@ -150,14 +150,14 @@ class Account(MPTTModel) :
     def has_already_a_matched(self, downline):
         return Matching.objects.filter(grantee=self, downlines__in=[downline]).exists()
 
-    # @property
-    # def get_pvs(self):
-    #     subcriptions = Subscription.objects.filter(member_account__in=self.get_descendants(include_self=True).order_by('created_at'))
-    #     pvs = 0
-    #     for subcription in subcriptions :
-    #         pvs += subcription.package.price
+    @property
+    def get_pvs(self):
+        subcriptions = Subscription.objects.filter(member_account__in=self.get_descendants(include_self=True).order_by('created_at'))
+        pvs = 0
+        for subcription in subcriptions :
+            pvs += subcription.package.price
 
-    #     return pvs
+        return pvs
 
 
 

@@ -3,7 +3,7 @@ import uuid
 from django.utils.translation import gettext as _
 from decimal import Decimal
 
-from prices.models import PurchaseBonus
+# from prices.models import PurchaseBonus
 
 
 class SaleDetail(models.Model):
@@ -20,12 +20,12 @@ class SaleDetail(models.Model):
 
         if self._state.adding :
 
-            referral_price = PurchaseBonus.objects.create(
-                grantee = self.member_account.referral_account,
-                sale_detail = self,
-                amount = self.amount * Decimal('0.4') # 40% du monant total des protuits
-            )
-            referral_price.save()
+            # referral_price = PurchaseBonus.objects.create(
+            #     grantee = self.member_account.referral_account,
+            #     sale_detail = self,
+            #     amount = self.amount * Decimal('0.4') # 40% du monant total des protuits
+            # )
+            # referral_price.save()
 
         super(SaleDetail, self).save(*args, **kwargs)
 

@@ -13,9 +13,9 @@ class MatchingAdmin(admin.ModelAdmin):
     list_display = ['id', 'grantee', 'amount', 'created_at']
 
 
-@admin.register(PurchaseBonus)
-class PurchaseBonusAdmin(admin.ModelAdmin):
-    list_display = ['id', 'grantee', 'amount', 'created_at']
+# @admin.register(PurchaseBonus)
+# class PurchaseBonusAdmin(admin.ModelAdmin):
+#     list_display = ['id', 'grantee', 'amount', 'created_at']
 
 
 @admin.register(Payment)

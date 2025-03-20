@@ -18,8 +18,8 @@ from utils.utils_functions import create_account
 
 from config.serializers import SubscriptionCodeSerializer
 from config.models import SubscriptionCode
-from prices.models import Referral, Matching, Payment, PurchaseBonus
-from prices.serializers import ReferralSerializer, MatchingSerializer, PaymentSerializer, PurchaseBonusSerializer
+from prices.models import Referral, Matching, Payment#, PurchaseBonus
+from prices.serializers import ReferralSerializer, MatchingSerializer, PaymentSerializer#, PurchaseBonusSerializer
 from prices.filters import MatchingFilter, ReferralFilter, PurchaseFilter
 from stock.models import SaleDetail
 from stock.serializers import SaleDetailSerializer
@@ -302,7 +302,7 @@ class OfficeViewSet(viewsets.ModelViewSet) :
                 elif payment_type == 'referral_payment' :
                     Referral.objects.filter(id__in=bonuse_ids).update(is_paid=True)
                 elif payment_type == 'purchase_payment' :
-                    PurchaseBonus.objects.filter(id__in=bonuse_ids).update(is_paid=True)
+                    pass #PurchaseBonus.objects.filter(id__in=bonuse_ids).update(is_paid=True)
                 else :
                     raise ValidationError("Le type de payment est obligatoire !") 
 
@@ -553,31 +553,31 @@ class AccountViewSet(viewsets.ModelViewSet) :
 
 
 
-    @action(detail=True, methods=['get'], url_path='member-purchases')
-    def member_purchases(self, request, pk):
-        account_instance = self.get_object()
-        search_value = request.query_params.get('search', '')
+    # @action(detail=True, methods=['get'], url_path='member-purchases')
+    # def member_purchases(self, request, pk):
+    #     account_instance = self.get_object()
+    #     search_value = request.query_params.get('search', '')
 
-        if search_value:
-            purchase_bonus_queryset = PurchaseBonus.objects.filter(
-                Q(sale_detail__member_account__first_name__icontains=search_value) |
-                Q(sale_detail__member_account__last_name__icontains=search_value) |
-                Q(sale_detail__member_account__company_id__icontains=search_value),
-                grantee=account_instance 
-            ).distinct()
-        else:
-            purchase_bonus_queryset = PurchaseBonus.objects.filter(grantee=account_instance)
+    #     if search_value:
+    #         purchase_bonus_queryset = PurchaseBonus.objects.filter(
+    #             Q(sale_detail__member_account__first_name__icontains=search_value) |
+    #             Q(sale_detail__member_account__last_name__icontains=search_value) |
+    #             Q(sale_detail__member_account__company_id__icontains=search_value),
+    #             grantee=account_instance 
+    #         ).distinct()
+    #     else:
+    #         purchase_bonus_queryset = PurchaseBonus.objects.filter(grantee=account_instance)
 
 
-        # Appliquer le filtre Django Filter
-        filter_instance = PurchaseFilter(request.GET, queryset=purchase_bonus_queryset)
-        filtered_queryset = filter_instance.qs  # Récupère les résultats filtrés
+    #     # Appliquer le filtre Django Filter
+    #     filter_instance = PurchaseFilter(request.GET, queryset=purchase_bonus_queryset)
+    #     filtered_queryset = filter_instance.qs  # Récupère les résultats filtrés
 
-        paginator = self.pagination_class()
-        paginated_queryset = paginator.paginate_queryset(filtered_queryset, request)
-        purchase_bonus_serializer = PurchaseBonusSerializer(paginated_queryset, many=True)
+    #     paginator = self.pagination_class()
+    #     paginated_queryset = paginator.paginate_queryset(filtered_queryset, request)
+    #     purchase_bonus_serializer = PurchaseBonusSerializer(paginated_queryset, many=True)
 
-        return paginator.get_paginated_response(purchase_bonus_serializer.data)
+    #     return paginator.get_paginated_response(purchase_bonus_serializer.data)
     
 
 
