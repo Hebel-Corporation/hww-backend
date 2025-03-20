@@ -43,6 +43,15 @@ class MemberPurchase(BonusBaseModel) :
 
 
 
+class PurchaseBonus(BonusBaseModel) :
+    sale_detail = models.ForeignKey("stock.SaleDetail", related_name="purchase_bonuses", null=True, on_delete=models.SET_NULL)
+
+    class Meta:
+        verbose_name_plural = "Purchase bonuses"
+
+
+
+
 class Reward(models.Model) :
     pass
 
