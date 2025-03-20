@@ -23,7 +23,7 @@ class SaleDetail(models.Model):
             referral_price = PurchaseBonus.objects.create(
                 grantee = self.member_account.referral_account,
                 sale_detail = self,
-                amount = self.amount * Decimal('0.4') # 20% du prix du package
+                amount = self.amount * Decimal('0.4') # 40% du monant total des protuits
             )
             referral_price.save()
 
