@@ -165,10 +165,10 @@ class Account(MPTTModel) :
     def get_balance(self):
         referrals = Referral.objects.filter(grantee=self, is_paid=False) # Récupérer les referrals associés à un compte
         matchings = Matching.objects.filter(grantee=self, is_paid=False) # Récupérer les matchings associés à un compte
-        purchase_bonus = PurchaseBonus.objects.filter(grantee=self, is_paid=False) # Récupérer les bonus sur achat des produits à un compte
+        # purchase_bonus = PurchaseBonus.objects.filter(grantee=self, is_paid=False) # Récupérer les bonus sur achat des produits à un compte
 
         # Combiner les résultats
-        all_bonuses = list(referrals) + list(matchings) + list(purchase_bonus)
+        all_bonuses = list(referrals) + list(matchings) # + list(purchase_bonus)
         balance = 0
         for bonus in all_bonuses :
             balance += bonus.amount
