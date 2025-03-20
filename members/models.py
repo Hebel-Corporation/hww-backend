@@ -142,22 +142,22 @@ class Account(MPTTModel) :
         return Referral.objects.filter(grantee=self).count()
     
 
-    @property
-    def get_puchase_bonus_count(self):
-        return PurchaseBonus.objects.filter(grantee=self).count()
+    # @property
+    # def get_puchase_bonus_count(self):
+    #     return PurchaseBonus.objects.filter(grantee=self).count()
     
 
     def has_already_a_matched(self, downline):
         return Matching.objects.filter(grantee=self, downlines__in=[downline]).exists()
 
-    @property
-    def get_pvs(self):
-        subcriptions = Subscription.objects.filter(member_account__in=self.get_descendants(include_self=True).order_by('created_at'))
-        pvs = 0
-        for subcription in subcriptions :
-            pvs += subcription.package.price
+    # @property
+    # def get_pvs(self):
+    #     subcriptions = Subscription.objects.filter(member_account__in=self.get_descendants(include_self=True).order_by('created_at'))
+    #     pvs = 0
+    #     for subcription in subcriptions :
+    #         pvs += subcription.package.price
 
-        return pvs
+    #     return pvs
 
 
 
