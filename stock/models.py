@@ -19,6 +19,7 @@ class SaleDetail(models.Model):
     def save(self, *args, **kwargs):
 
         if self._state.adding :
+            pass
 
             # referral_price = PurchaseBonus.objects.create(
             #     grantee = self.member_account.referral_account,
