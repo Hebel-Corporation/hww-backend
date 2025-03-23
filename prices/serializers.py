@@ -1,4 +1,4 @@
-from .models import Referral, Matching, Payment, PurchaseBonus
+from .models import Referral, Matching, Payment, MemberPurchase
 from rest_framework import serializers
 from drf_queryfields import QueryFieldsMixin
 
@@ -23,12 +23,12 @@ class MatchingSerializer(QueryFieldsMixin, serializers.ModelSerializer):
         fields = '__all__'
 
 
-class PurchaseBonusSerializer(QueryFieldsMixin, serializers.ModelSerializer):
+class MemberPurchaseSerializer(QueryFieldsMixin, serializers.ModelSerializer):
 
     sale_detail = SaleDetailSerializer(many=False)
 
     class Meta:
-        model = PurchaseBonus
+        model = MemberPurchase
         fields = '__all__'
 
 

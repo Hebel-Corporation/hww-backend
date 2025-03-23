@@ -34,6 +34,15 @@ class Matching(BonusBaseModel) :
 
 
 
+class MemberPurchase(BonusBaseModel) :
+    sale_detail = models.ForeignKey("stock.SaleDetail", related_name="member_purchase", null=True, on_delete=models.SET_NULL)
+
+    class Meta:
+        verbose_name_plural = "Member bonuses"
+
+
+
+
 class PurchaseBonus(BonusBaseModel) :
     sale_detail = models.ForeignKey("stock.SaleDetail", related_name="purchase_bonuses", null=True, on_delete=models.SET_NULL)
 
