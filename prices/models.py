@@ -5,6 +5,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
 
 
+
 class BonusBaseModel(models.Model):
     id = models.UUIDField(_("Unique ID"), primary_key=True, default=uuid.uuid4, editable=False)
     grantee = models.ForeignKey("members.Account", verbose_name=_("Grantee account"), on_delete=models.CASCADE)
@@ -31,15 +32,6 @@ class Referral(BonusBaseModel) :
 class Matching(BonusBaseModel) :
     downlines = models.ManyToManyField("members.Account", related_name="matching_downlines")
     is_validated = models.BooleanField(default=False)
-
-
-
-class MemberPurchase(BonusBaseModel) :
-    sale_detail = models.ForeignKey("stock.SaleDetail", related_name="member_purchase", null=True, on_delete=models.SET_NULL)
-
-    class Meta:
-        verbose_name_plural = "Member bonuses"
-
 
 
 

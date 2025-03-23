@@ -3,7 +3,7 @@ from django.db import models, transaction
 from django.utils.translation import gettext as _
 # from django.utils.translation import gettext_lazy as _
 from mptt.models import MPTTModel, TreeForeignKey
-from prices.models import Referral, Matching, MemberPurchase
+from prices.models import Referral, Matching, PurchaseBonus
 from config.models import SubscriptionCode
 
 from decimal import Decimal
@@ -91,7 +91,6 @@ class Account(MPTTModel) :
     referral_account = models.ForeignKey('self', verbose_name=_("Referral account"), null=True, blank=True, on_delete=models.SET_NULL)
     parent = TreeForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='children')
     position = models.CharField(_("Position at Sponsor"), choices=POSITION, default='left', null=True, blank=True, max_length=10, editable=False)
-    # pvs = models.IntegerField(editable=False)
     office = models.ForeignKey('members.Office', verbose_name=_("Account Office Recorder"), related_name="account_offices_set", blank=True, null=True, on_delete=models.SET_NULL)
     rewards = models.ManyToManyField("prices.Reward", verbose_name=_("Account rewards"), blank=True)
     is_active = models.BooleanField(_('Is active'), default=True)
@@ -144,7 +143,7 @@ class Account(MPTTModel) :
 
     @property
     def get_puchase_bonus_count(self):
-        return MemberPurchase.objects.filter(grantee=self).count()
+        return PurchaseBonus.objects.filter(grantee=self).count()
     
 
     def has_already_a_matched(self, downline):
@@ -165,7 +164,7 @@ class Account(MPTTModel) :
     def get_balance(self):
         referrals = Referral.objects.filter(grantee=self, is_paid=False) # Récupérer les referrals associés à un compte
         matchings = Matching.objects.filter(grantee=self, is_paid=False) # Récupérer les matchings associés à un compte
-        purchase_bonus = MemberPurchase.objects.filter(grantee=self, is_paid=False) # Récupérer les bonus sur achat des produits à un compte
+        purchase_bonus = PurchaseBonus.objects.filter(grantee=self, is_paid=False) # Récupérer les bonus sur achat des produits à un compte
 
         # Combiner les résultats
         all_bonuses = list(referrals) + list(matchings) + list(purchase_bonus)

@@ -178,6 +178,8 @@ cython_debug/
 
 # fixtures
 /fixtures/all_data.json
+/fixtures/backup.json
+/fixtures/backup2.json
 
 # PyCharm
 #  JetBrains specific template is maintained in a separate JetBrains.gitignore that can

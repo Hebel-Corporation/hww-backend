@@ -1,5 +1,5 @@
 from django_filters import rest_framework as filters
-from .models import Matching, Referral, MemberPurchase
+from .models import Matching, Referral, PurchaseBonus
 
 
 
@@ -20,9 +20,9 @@ class ReferralFilter(filters.FilterSet):
         fields = ['is_paid']  # Liste des champs filtrables
 
 
-class MemberPurchaseFilter(filters.FilterSet):
+class PurchaseBonusFilter(filters.FilterSet):
     is_paid = filters.BooleanFilter(field_name="is_paid", lookup_expr="exact")  # Filtrer exactement sur is_paid
 
     class Meta:
-        model = MemberPurchase
+        model = PurchaseBonus
         fields = ['is_paid']  # Liste des champs filtrables

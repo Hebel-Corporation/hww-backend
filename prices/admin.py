@@ -8,20 +8,18 @@ class ReferralAdmin(admin.ModelAdmin):
 
 
 
+
 @admin.register(Matching)
 class MatchingAdmin(admin.ModelAdmin):
     list_display = ['id', 'grantee', 'amount', 'created_at']
 
-
-@admin.register(MemberPurchase)
-class MemberPurchaseAdmin(admin.ModelAdmin):
-    list_display = ['id', 'grantee', 'amount', 'created_at']
 
 
 
 @admin.register(PurchaseBonus)
 class PurchaseBonusAdmin(admin.ModelAdmin):
     list_display = ['id', 'grantee', 'amount', 'created_at']
+
 
 
 
