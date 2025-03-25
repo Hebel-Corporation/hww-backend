@@ -48,8 +48,7 @@ def create_account(referral, sponsor, member, office, package_id):
         company_id = f"{member.company_id}-{settings.ACCOUNT_COMPANY_ID_INITIAL}{member.accounts.count()+1}",
         referral_account = referral,
         parent = sponsor,
-        position = account_position,
-        pvs=subscription_code.package.price
+        position = account_position
     )
     account.save(subscription_code=subscription_code) # Transfer [package] instance in account save method
 
@@ -65,10 +64,6 @@ def create_pairing_bonuses(new_member_account, upline, position:str):
     if upline :
         from prices.models import Matching
         from config.models import MatchingPrice
-
-        # Increase upline PVs
-        upline.pvs += new_member_account.pvs
-        upline.save()
 
         # Get upline direct children
         upline_direct_downlines = upline.get_children()
