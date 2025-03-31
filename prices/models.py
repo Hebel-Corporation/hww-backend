@@ -37,11 +37,16 @@ class Matching(BonusBaseModel) :
 
 class PurchaseBonus(BonusBaseModel) :
     sale_detail = models.ForeignKey("stock.SaleDetail", related_name="purchase_bonuses", null=True, on_delete=models.SET_NULL)
+    amount_to_be_paid = models.DecimalField(max_digits=6, decimal_places=2, editable=False, default=0)
+
 
     class Meta:
         verbose_name_plural = "Purchase bonuses"
 
-
+    def save(self, *args, **kwargs):
+        if not self.amount_to_be_paid:
+            self.amount_to_be_paid = self.amount
+        super().save(*args, **kwargs)
 
 
 class Reward(models.Model) :
@@ -56,7 +61,7 @@ class Payment(models.Model):
     PAYMENT_TYPE_CHOICES = (
         ('matching_payment', "Paiement d'équilibres"),
         ('referral_payment', "Paiement de parrainages"),
-        ('purchase_payment', "Paiement de bonus d'achat"),
+        ('purchase_payment', "Paiement de bonus d'achat produit"),
     )
 
     id = models.UUIDField(_("Unique ID"), primary_key=True, default=uuid.uuid4, editable=False)
@@ -65,7 +70,7 @@ class Payment(models.Model):
     payment_type = models.CharField(max_length=50, choices=PAYMENT_TYPE_CHOICES, null=True)
     bonuses = models.JSONField(default=list)
     office = models.ForeignKey("members.Office", null=True, on_delete=models.SET_NULL)
-    created_at = models.DateField(_('Paid on'), auto_now_add=True)
+    created_at = models.DateTimeField(_('Paid on'), auto_now_add=True)
 
     def __str__(self):
         return f"Payment of {self.amount} by {self.account.member.first_name} on {self.created_at}"

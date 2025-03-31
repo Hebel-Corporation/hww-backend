@@ -94,7 +94,7 @@ class Account(MPTTModel) :
     office = models.ForeignKey('members.Office', verbose_name=_("Account Office Recorder"), related_name="account_offices_set", blank=True, null=True, on_delete=models.SET_NULL)
     rewards = models.ManyToManyField("prices.Reward", verbose_name=_("Account rewards"), blank=True)
     is_active = models.BooleanField(_('Is active'), default=True)
-    created_at = models.DateField(_("Date"), auto_now=False, auto_now_add=True)
+    created_at = models.DateTimeField(_("Date"), auto_now=False, auto_now_add=True)
 
 
     class MPTTMeta:

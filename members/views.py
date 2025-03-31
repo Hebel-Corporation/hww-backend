@@ -321,6 +321,105 @@ class OfficeViewSet(viewsets.ModelViewSet) :
     
 
 
+    @action(detail=True, methods=['post'], url_path='process-purchase-bonus-payment')
+    def process_purchase_bonus_payment(self, request, pk=None):
+        """
+        Traite le paiement des bonus d'achat selon un algorithme spécifique :
+        1. Cherche un bonus exactement égal au montant
+        2. Cherche une combinaison de bonus égale au montant
+        3. Réduit un bonus supérieur au montant
+        """
+        from itertools import combinations
+        
+        office_instance = self.get_object()
+        api_data = request.data
+        budget = api_data.get('amount')
+        account_instance = get_object_or_404(Account, id=api_data.get('account'))
+
+        if not budget or budget <= 0:
+            return Response(
+                {"error": "Le montant du paiement est invalide"}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            with transaction.atomic():
+                # Récupérer tous les bonus d'achat non payés
+                bonuses = PurchaseBonus.objects.filter(
+                    grantee=account_instance,
+                    is_paid=False
+                ).order_by('amount_to_be_paid')
+
+                if not bonuses.exists():
+                    return Response(
+                        {"error": "Aucun bonus d'achat disponible"}, 
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+
+                # 1. Chercher un bonus exact
+                exact_bonus = bonuses.filter(amount_to_be_paid=budget).first()
+                if exact_bonus:
+                    exact_bonus.is_paid = True
+                    exact_bonus.amount_to_be_paid = 0
+                    exact_bonus.save()
+                    paid_bonuses = [str(exact_bonus.id)]
+                    message = f"Bonus d'achat payé avec montant exact de {budget}$"
+                
+                else:
+                    # 2. Chercher une combinaison
+                    combination_found = False
+                    paid_bonuses = []
+                    
+                    for r in range(2, len(bonuses) + 1):
+                        for combo in combinations(bonuses, r):
+                            if sum(b.amount_to_be_paid for b in combo) == budget:
+                                for bonus in combo:
+                                    bonus.is_paid = True
+                                    bonus.amount_to_be_paid = 0
+                                    bonus.save()
+                                    paid_bonuses.append(str(bonus.id))
+                                combination_found = True
+                                message = f"Combinaison de bonus d'achat trouvée pour {budget}$"
+                                break
+                        if combination_found:
+                            break
+
+                    if not combination_found:
+                        # 3. Chercher un bonus supérieur
+                        bonus_sup = bonuses.filter(amount__gt=budget).first()
+                        if bonus_sup:
+                            bonus_sup.amount_to_be_paid -= budget
+                            bonus_sup.save()
+                            paid_bonuses = [str(bonus_sup.id)]
+                            message = f"Bonus d'achat réduit de {budget}$"
+                        else:
+                            return Response(
+                                {"error": "Aucun bonus d'achat produit disponible pour ce montant"}, 
+                                status=status.HTTP_400_BAD_REQUEST
+                            )
+
+                # Créer l'enregistrement du paiement
+                payment = Payment.objects.create(
+                    office=office_instance,
+                    account=account_instance,
+                    amount=budget,
+                    payment_type='purchase_payment',
+                    bonuses=paid_bonuses
+                )
+
+                return Response({
+                    "message": message,
+                    "payment": PaymentSerializer(payment).data
+                }, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            return Response(
+                {"error": str(e)}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+
+
     def create(self, request):
         office_data = request.data.get('office')
         staff_data = request.data.get('staff')
@@ -447,7 +546,7 @@ class AccountViewSet(viewsets.ModelViewSet) :
         search_value = request.query_params.get('search', '')
 
         paginator = self.pagination_class()
-        downline_queryset = account_instance.get_descendants(include_self=False).order_by('created_at')
+        downline_queryset = account_instance.get_descendants(include_self=False).order_by('-created_at')
 
         if search_value:
             downline_queryset = downline_queryset.filter(
@@ -498,16 +597,15 @@ class AccountViewSet(viewsets.ModelViewSet) :
         account_instance = self.get_object()
         search_value = request.query_params.get('search', '')
 
+        referral_queryset = Referral.objects.filter(grantee=account_instance).order_by('is_paid')
+
         if search_value:
             referral_queryset = Referral.objects.filter(
                 Q(downline__member__first_name__icontains=search_value) |
                 Q(downline__member__last_name__icontains=search_value) |
                 Q(downline__member__company_id__icontains=search_value) |
-                Q(downline__company_id__icontains=search_value),
-                grantee=account_instance 
+                Q(downline__company_id__icontains=search_value)
             )
-        else:
-            referral_queryset = Referral.objects.filter(grantee=account_instance)
 
         # Appliquer le filtre Django Filter
         filter_instance = ReferralFilter(request.GET, queryset=referral_queryset)
@@ -528,16 +626,15 @@ class AccountViewSet(viewsets.ModelViewSet) :
         search_value = request.query_params.get('search', '')
         # search_value = request.query_params.get('search', '')
 
+        matching_queryset = Matching.objects.filter(grantee=account_instance).order_by('is_paid')
+
         if search_value:
-            matching_queryset = Matching.objects.filter(
+            matching_queryset = matching_queryset.filter(
                 Q(downlines__member__first_name__icontains=search_value) |
                 Q(downlines__member__last_name__icontains=search_value) |
                 Q(downlines__member__company_id__icontains=search_value) |
-                Q(downlines__company_id__icontains=search_value),
-                grantee=account_instance 
+                Q(downlines__company_id__icontains=search_value)
             ).distinct()
-        else:
-            matching_queryset = Matching.objects.filter(grantee=account_instance)
 
 
         # Appliquer le filtre Django Filter
@@ -558,16 +655,14 @@ class AccountViewSet(viewsets.ModelViewSet) :
         account_instance = self.get_object()
         search_value = request.query_params.get('search', '')
 
+        purchase_bonus_queryset = PurchaseBonus.objects.filter(grantee=account_instance).order_by('is_paid')
+
         if search_value:
-            purchase_bonus_queryset = PurchaseBonus.objects.filter(
+            purchase_bonus_queryset = purchase_bonus_queryset.filter(
                 Q(sale_detail__member_account__first_name__icontains=search_value) |
                 Q(sale_detail__member_account__last_name__icontains=search_value) |
-                Q(sale_detail__member_account__company_id__icontains=search_value),
-                grantee=account_instance 
-            ).distinct()
-        else:
-            purchase_bonus_queryset = PurchaseBonus.objects.filter(grantee=account_instance)
-
+                Q(sale_detail__member_account__company_id__icontains=search_value)
+            )
 
         # Appliquer le filtre Django Filter
         filter_instance = PurchaseBonusFilter(request.GET, queryset=purchase_bonus_queryset)
@@ -588,13 +683,12 @@ class AccountViewSet(viewsets.ModelViewSet) :
         account_instance = self.get_object()
         search_value = request.query_params.get('search', '')
 
+        payment_queryset = Payment.objects.filter(account=account_instance).order_by('-created_at')
+
         if search_value:
-            payment_queryset = Payment.objects.filter(
-                Q(payment_type__icontains=search_value),
-                account=account_instance 
-            ).distinct()
-        else:
-            payment_queryset = Payment.objects.filter(account=account_instance)
+            payment_queryset = payment_queryset.filter(
+                Q(payment_type__icontains=search_value)
+            )
 
         paginator = self.pagination_class()
         paginated_queryset = paginator.paginate_queryset(payment_queryset, request)
