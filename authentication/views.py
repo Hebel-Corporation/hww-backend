@@ -86,5 +86,3 @@ class CustomUserViewSet(viewsets.ModelViewSet):
             **member_serializer.data,
             "accounts": AccountSerializer(member_instance.accounts.all(), many=True, exclude=['member', 'lft', 'rght', 'tree_id', 'level']).data
         }, status=status.HTTP_200_OK)
-
-
