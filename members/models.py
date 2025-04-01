@@ -88,7 +88,7 @@ class Account(MPTTModel) :
     id = models.UUIDField(_("ID"), primary_key=True, default=uuid.uuid4, editable=False)
     member = models.ForeignKey("authentication.CustomUser", verbose_name=_("Member"), related_name="accounts", on_delete=models.CASCADE)
     company_id = models.CharField(_("Company ID"), max_length=50,unique=True)
-    referral_account = models.ForeignKey('self', verbose_name=_("Referral account"), null=True, blank=True, on_delete=models.SET_NULL)
+    referral_account = models.ForeignKey('self', verbose_name=_("Referral account"), null=True, blank=True, on_delete=models.CASCADE)
     parent = TreeForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='children')
     position = models.CharField(_("Position at Sponsor"), choices=POSITION, default='left', null=True, blank=True, max_length=10, editable=False)
     office = models.ForeignKey('members.Office', verbose_name=_("Account Office Recorder"), related_name="account_offices_set", blank=True, null=True, on_delete=models.SET_NULL)
@@ -167,10 +167,13 @@ class Account(MPTTModel) :
         purchase_bonus = PurchaseBonus.objects.filter(grantee=self, is_paid=False) # Récupérer les bonus sur achat des produits à un compte
 
         # Combiner les résultats
-        all_bonuses = list(referrals) + list(matchings) + list(purchase_bonus)
+        all_bonuses = list(referrals) + list(matchings)
         balance = 0
         for bonus in all_bonuses :
             balance += bonus.amount
+
+        for bonus in list(purchase_bonus) :
+            balance += bonus.amount_to_be_paid
 
         return balance
 

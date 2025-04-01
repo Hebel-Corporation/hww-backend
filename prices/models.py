@@ -25,7 +25,7 @@ class BonusBaseModel(models.Model):
 
 
 class Referral(BonusBaseModel) :
-    downline = models.ForeignKey("members.Account", related_name="referral_downline", null=True, on_delete=models.SET_NULL)
+    downline = models.ForeignKey("members.Account", related_name="referral_downline", null=True, on_delete=models.CASCADE)
 
 
 
@@ -37,7 +37,7 @@ class Matching(BonusBaseModel) :
 
 class PurchaseBonus(BonusBaseModel) :
     sale_detail = models.ForeignKey("stock.SaleDetail", related_name="purchase_bonuses", null=True, on_delete=models.SET_NULL)
-    amount_to_be_paid = models.DecimalField(max_digits=6, decimal_places=2, editable=False, default=0)
+    amount_to_be_paid = models.DecimalField(max_digits=6, decimal_places=2, default=0)
 
 
     class Meta:
