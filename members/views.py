@@ -147,9 +147,18 @@ class OfficeViewSet(viewsets.ModelViewSet) :
 
                 referral_account = None if is_first_node else get_object_or_404(Account, company_id=uplines_data.get('referral_account', None))
                 sponsor_account = None if is_first_node else get_object_or_404(Account, company_id=uplines_data.get('sponsor_account', None))
+                
+                step = 0
+                member_id = ""
+                username = ""
+                while True :
+                    step += 1
+                    member_id = f"{settings.COMPANY_INITIAL}-{office_instance.office_code}-{settings.MEMBER_COMPANY_ID_INITIAL}{CustomUser.objects.filter(user_type='member').count()+step}"
+                    username = ''.join(member_id.split('-'))
+                    if not CustomUser.objects.filter(username=username).exists():
+                        break
 
-                member_id = f"{settings.COMPANY_INITIAL}-{office_instance.office_code}-{settings.MEMBER_COMPANY_ID_INITIAL}{CustomUser.objects.filter(user_type='member').count()+1}"
-                member_data['username'] = ''.join(member_id.split('-'))
+                member_data['username'] = username
                 member_data['password'] = settings.MEMBER_DEFAULT_PASSWORD
                 member_serialiser = CustomUserSerializer(data=member_data)
                 member_serialiser.is_valid(raise_exception=True)
