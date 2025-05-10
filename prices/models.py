@@ -43,11 +43,6 @@ class PurchaseBonus(BonusBaseModel) :
     class Meta:
         verbose_name_plural = "Purchase bonuses"
 
-    def save(self, *args, **kwargs):
-        if not self.amount_to_be_paid:
-            self.amount_to_be_paid = self.amount
-        super().save(*args, **kwargs)
-
 
 class Reward(models.Model) :
     pass
