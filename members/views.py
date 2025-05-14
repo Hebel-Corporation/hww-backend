@@ -170,7 +170,7 @@ class OfficeViewSet(viewsets.ModelViewSet) :
                 member.office = office_instance
                 member.save()
 
-                # all create account function
+                # call create account util function
                 account = create_account(
                     referral=referral_account, 
                     sponsor=sponsor_account, 
@@ -201,7 +201,7 @@ class OfficeViewSet(viewsets.ModelViewSet) :
                 sponsor_account = get_object_or_404(Account, company_id=api_data.get('sponsor_account', None))
                 member = get_object_or_404(CustomUser, id=api_data.get('member', None))
 
-                # all create account function
+                # call create account util function
                 account = create_account(
                     referral=referral_account, 
                     sponsor=sponsor_account, 
@@ -234,7 +234,7 @@ class OfficeViewSet(viewsets.ModelViewSet) :
                 sale_detail = SaleDetail.objects.create(
                     member_account = account,
                     amount = amount,
-                    office = office_instance
+                    office = office_instance,
                 )
                 
         except Exception as e:
@@ -344,6 +344,11 @@ class OfficeViewSet(viewsets.ModelViewSet) :
         api_data = request.data
         budget = api_data.get('amount')
         account_instance = get_object_or_404(Account, id=api_data.get('account'))
+        if 2 == 4:
+            return Response(
+                {"error": "Cet compte n'a pas encore payé la maintenance"}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         if not budget or budget <= 0:
             return Response(

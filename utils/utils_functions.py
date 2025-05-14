@@ -27,6 +27,8 @@ def create_account(referral, sponsor, member, office, package_id):
     account_position = None
     if sponsor :
         account_position = 'left' if sponsor.get_children().count() < 1 else 'right'
+        if sponsor.get_children().count() == 2 :
+            raise ValueError(f"Le membre {sponsor.company_id} a deja 2 enfants.")
 
     package = None
     if package_id :
@@ -37,22 +39,25 @@ def create_account(referral, sponsor, member, office, package_id):
     else :
         package = Package.objects.filter(is_default=True).first() 
 
+    subscription_code = None
     try :
         subscription_code = SubscriptionCode.objects.filter(office=office, package=package, is_valid=True).order_by('created_at').first()
     except SubscriptionCode.DoesNotExist :
         raise ValueError(f"Vous avez pas de codes d'enregistrement valides pour ce paquet enfin d'enregistrer ce compte.")
 
     account = Account(
-        member=member,
         office = office,
-        company_id = f"{member.company_id}-{settings.ACCOUNT_COMPANY_ID_INITIAL}{member.accounts.count()+1}",
         referral_account = referral,
         parent = sponsor,
+        member = member,
+        company_id = f"{member.company_id}-{settings.ACCOUNT_COMPANY_ID_INITIAL}{member.accounts.count()+1}",
         position = account_position
     )
+    
     account.save(subscription_code=subscription_code) # Transfer [package] instance in account save method
-
+    
     return account
+
 
 
 
@@ -97,4 +102,10 @@ def create_pairing_bonuses(new_member_account, upline, position:str):
     
         create_pairing_bonuses(new_member_account,upline=upline.parent,position=upline.position)
 
+
+
+
+
+def has_paid_maintenance(account_instance) :
+    return account_instance.payments.filter(type='maintenance').exists()
 
