@@ -307,15 +307,18 @@ class OfficeViewSet(viewsets.ModelViewSet) :
                 payment_type = api_data.get('payment_type')
 
                 if payment_type == 'matching_payment' :
-                    Matching.objects.filter(id__in=bonuse_ids).update(is_paid=True)
+                    if Matching.objects.filter(id__in=bonuse_ids, is_paid=False).exists():
+                        Matching.objects.filter(id__in=bonuse_ids).update(is_paid=True)
                 elif payment_type == 'referral_payment' :
-                    Referral.objects.filter(id__in=bonuse_ids).update(is_paid=True)
+                    if Referral.objects.filter(id__in=bonuse_ids, is_paid=False).exists():
+                        Referral.objects.filter(id__in=bonuse_ids).update(is_paid=True)
                 elif payment_type == 'purchase_payment' :
-                    PurchaseBonus.objects.filter(id__in=bonuse_ids).update(is_paid=True)
+                    if PurchaseBonus.objects.filter(id__in=bonuse_ids, is_paid=False).exists():
+                        PurchaseBonus.objects.filter(id__in=bonuse_ids).update(is_paid=True)
                 else :
                     raise ValidationError("Le type de payment est obligatoire !") 
 
-                payment = Payment.objects.create(
+                payment, _ = Payment.objects.get_or_create(
                     office = office_instance,
                     account = account_instance,
                     amount = api_data.get('amount'),
@@ -338,7 +341,7 @@ class OfficeViewSet(viewsets.ModelViewSet) :
         2. Cherche une combinaison de bonus égale au montant
         3. Réduit un bonus supérieur au montant
         """
-        from itertools import combinations
+        # from itertools import combinations
         
         office_instance = self.get_object()
         api_data = request.data
@@ -357,6 +360,75 @@ class OfficeViewSet(viewsets.ModelViewSet) :
             )
 
         try:
+            # with transaction.atomic():
+            #     # Récupérer tous les bonus d'achat non payés
+            #     bonuses = PurchaseBonus.objects.filter(
+            #         grantee=account_instance,
+            #         is_paid=False
+            #     ).order_by('amount_to_be_paid')
+
+            #     if not bonuses.exists():
+            #         return Response(
+            #             {"error": "Aucun bonus d'achat disponible"}, 
+            #             status=status.HTTP_400_BAD_REQUEST
+            #         )
+
+            #     # 1. Chercher un bonus exact
+            #     exact_bonus = bonuses.filter(amount_to_be_paid=budget).first()
+            #     if exact_bonus:
+            #         exact_bonus.is_paid = True
+            #         exact_bonus.amount_to_be_paid = 0
+            #         exact_bonus.save()
+            #         paid_bonuses = [str(exact_bonus.id)]
+            #         message = f"Bonus d'achat payé avec montant exact de {budget}$"
+                
+            #     else:
+            #         # 2. Chercher une combinaison
+            #         combination_found = False
+            #         paid_bonuses = []
+                    
+            #         for r in range(2, len(bonuses) + 1):
+            #             for combo in combinations(bonuses, r):
+            #                 if sum(b.amount_to_be_paid for b in combo) == budget:
+            #                     for bonus in combo:
+            #                         bonus.is_paid = True
+            #                         bonus.amount_to_be_paid = 0
+            #                         bonus.save()
+            #                         paid_bonuses.append(str(bonus.id))
+            #                     combination_found = True
+            #                     message = f"Combinaison de bonus d'achat trouvée pour {budget}$"
+            #                     break
+            #             if combination_found:
+            #                 break
+
+            #         if not combination_found:
+            #             # 3. Chercher un bonus supérieur
+            #             bonus_sup = bonuses.filter(amount__gt=budget).first()
+            #             if bonus_sup:
+            #                 bonus_sup.amount_to_be_paid -= budget
+            #                 bonus_sup.save()
+            #                 paid_bonuses = [str(bonus_sup.id)]
+            #                 message = f"Bonus d'achat réduit de {budget}$"
+            #             else:
+            #                 return Response(
+            #                     {"error": "Aucun bonus d'achat produit disponible pour ce montant"}, 
+            #                     status=status.HTTP_400_BAD_REQUEST
+            #                 )
+
+            #     # Créer l'enregistrement du paiement
+            #     payment = Payment.objects.create(
+            #         office=office_instance,
+            #         account=account_instance,
+            #         amount=budget,
+            #         payment_type='purchase_payment',
+            #         bonuses=paid_bonuses
+            #     )
+
+            #     return Response({
+            #         "message": message,
+            #         "payment": PaymentSerializer(payment).data
+            #     }, status=status.HTTP_201_CREATED)
+
             with transaction.atomic():
                 # Récupérer tous les bonus d'achat non payés
                 bonuses = PurchaseBonus.objects.filter(
@@ -365,66 +437,48 @@ class OfficeViewSet(viewsets.ModelViewSet) :
                 ).order_by('amount_to_be_paid')
 
                 if not bonuses.exists():
-                    return Response(
-                        {"error": "Aucun bonus d'achat disponible"}, 
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
+                    return Response({"error": "Aucun bonus d'achat disponible"}, status=status.HTTP_400_BAD_REQUEST)
 
-                # 1. Chercher un bonus exact
+                # Étape 1: Recherche de bonus exact
                 exact_bonus = bonuses.filter(amount_to_be_paid=budget).first()
                 if exact_bonus:
                     exact_bonus.is_paid = True
                     exact_bonus.amount_to_be_paid = 0
                     exact_bonus.save()
-                    paid_bonuses = [str(exact_bonus.id)]
-                    message = f"Bonus d'achat payé avec montant exact de {budget}$"
-                
-                else:
-                    # 2. Chercher une combinaison
-                    combination_found = False
-                    paid_bonuses = []
-                    
-                    for r in range(2, len(bonuses) + 1):
-                        for combo in combinations(bonuses, r):
-                            if sum(b.amount_to_be_paid for b in combo) == budget:
-                                for bonus in combo:
-                                    bonus.is_paid = True
-                                    bonus.amount_to_be_paid = 0
-                                    bonus.save()
-                                    paid_bonuses.append(str(bonus.id))
-                                combination_found = True
-                                message = f"Combinaison de bonus d'achat trouvée pour {budget}$"
-                                break
-                        if combination_found:
+                    return create_payment_record(office_instance, account_instance, budget, [exact_bonus])
+
+                # Étape 2: Recherche de combinaisons avec somme légèrement supérieure
+                paid_bonuses = []
+                remaining_budget = budget
+
+                # Trier les bonus par ordre croissant pour optimiser le traitement
+                sorted_bonuses = sorted(bonuses, key=lambda x: x.amount_to_be_paid)
+
+                for bonus in sorted_bonuses:
+                    if bonus.amount_to_be_paid <= remaining_budget:
+                        # Bonus entièrement utilisable
+                        paid_bonuses.append(bonus)
+                        remaining_budget -= bonus.amount_to_be_paid
+                        bonus.is_paid = True
+                        bonus.amount_to_be_paid = 0
+                        bonus.save()
+
+                        if remaining_budget == 0:
                             break
+                    else:
+                        # Bonus partiellement payé
+                        bonus.amount_to_be_paid -= remaining_budget
+                        bonus.save()
+                        paid_bonuses.append(bonus)
+                        break
 
-                    if not combination_found:
-                        # 3. Chercher un bonus supérieur
-                        bonus_sup = bonuses.filter(amount__gt=budget).first()
-                        if bonus_sup:
-                            bonus_sup.amount_to_be_paid -= budget
-                            bonus_sup.save()
-                            paid_bonuses = [str(bonus_sup.id)]
-                            message = f"Bonus d'achat réduit de {budget}$"
-                        else:
-                            return Response(
-                                {"error": "Aucun bonus d'achat produit disponible pour ce montant"}, 
-                                status=status.HTTP_400_BAD_REQUEST
-                            )
+                if not paid_bonuses:
+                    return Response(
+                        {"error": "Aucun bonus d'achat produit disponible pour ce montant"}, 
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
 
-                # Créer l'enregistrement du paiement
-                payment = Payment.objects.create(
-                    office=office_instance,
-                    account=account_instance,
-                    amount=budget,
-                    payment_type='purchase_payment',
-                    bonuses=paid_bonuses
-                )
-
-                return Response({
-                    "message": message,
-                    "payment": PaymentSerializer(payment).data
-                }, status=status.HTTP_201_CREATED)
+                return create_payment_record(office_instance, account_instance, budget, paid_bonuses)
 
         except Exception as e:
             return Response(
@@ -480,7 +534,19 @@ class OfficeViewSet(viewsets.ModelViewSet) :
 
     
 
+def create_payment_record(office, account, amount, bonuses):
+    payment = Payment.objects.create(
+        office=office,
+        account=account,
+        amount=amount,
+        payment_type='purchase_payment',
+        bonuses=[str(bonus.id) for bonus in bonuses]
+    )
 
+    return Response({
+        "message": f"Bonus d'achat traités pour {amount}$",
+        "payment": PaymentSerializer(payment).data
+    }, status=status.HTTP_201_CREATED)
 
 
 class PackageViewSet(viewsets.ModelViewSet) :
