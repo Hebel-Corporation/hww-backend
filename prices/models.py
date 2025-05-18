@@ -11,8 +11,8 @@ class BonusBaseModel(models.Model):
     grantee = models.ForeignKey("members.Account", verbose_name=_("Grantee account"), on_delete=models.CASCADE)
     amount = models.DecimalField(max_digits=6, decimal_places=2)
     is_paid = models.BooleanField(default=False)
-    created_at = models.DateField(auto_now_add=True)
-    updated_at = models.DateField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
 
     class Meta:
@@ -42,11 +42,6 @@ class PurchaseBonus(BonusBaseModel) :
 
     class Meta:
         verbose_name_plural = "Purchase bonuses"
-
-    def save(self, *args, **kwargs):
-        if not self.amount_to_be_paid:
-            self.amount_to_be_paid = self.amount
-        super().save(*args, **kwargs)
 
 
 class Reward(models.Model) :
