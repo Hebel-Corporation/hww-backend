@@ -1,6 +1,6 @@
 from django.shortcuts import get_object_or_404
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.core.exceptions import ValidationError
 from rest_framework import viewsets, status
 from rest_framework.permissions import IsAuthenticated
@@ -25,6 +25,9 @@ from stock.models import SaleDetail
 from stock.serializers import SaleDetailSerializer
 
 from django.conf import settings
+from django.db.models.functions import TruncMonth
+from datetime import datetime
+import calendar
 
 
 class CountryViewSet(viewsets.ModelViewSet) :
@@ -66,12 +69,99 @@ class OfficeViewSet(viewsets.ModelViewSet) :
         search_value = request.query_params.get('search', '')
 
         if office_instance.office_type == 'head_office':
-            subscriptions = Subscription.objects.filter(office=office_instance)
+            accounts = Account.objects.all()
+            matching = Matching.objects.all()
+            purchase_bonus = PurchaseBonus.objects.all()
         elif office_instance.office_type == 'sub_office':
-            subscriptions = Subscription.objects.filter(office=office_instance)
+            accounts = Account.objects.filter(office=office_instance)
+            matching = Matching.objects.filter(office=office_instance)
+            purchase_bonus = PurchaseBonus.objects.filter(office=office_instance)
+
+        current_year = datetime.now().year
+
+        subscriptions = (
+            Account.objects
+            .filter(created_at__year=current_year)
+            .annotate(month=TruncMonth("created_at"))
+            .values("month")
+            .annotate(total=Count("id"))
+            .order_by("month")
+        )
+
+        matchings = (
+            Matching.objects
+            .filter(created_at__year=current_year)
+            .annotate(month=TruncMonth("created_at"))
+            .values("month")
+            .annotate(total=Count("id"))
+            .order_by("month")
+        )
+
+        purchase_bonus = (
+            PurchaseBonus.objects
+            .filter(created_at__year=current_year)
+            .annotate(month=TruncMonth("created_at"))
+            .values("month")
+            .annotate(total=Count("id"))
+            .order_by("month")
+        )
+
+        # rewards = (
+        #     Reward.objects
+        #     .filter(created_at__year=current_year)
+        #     .annotate(month=TruncMonth("created_at"))
+        #     .values("month")
+        #     .annotate(total=Count("id"))
+        #     .order_by("month")
+        # )
+
+        # Créer une liste de 12 mois avec 0 par défaut
+        accounts_result = []
+        matchings_result = []
+        purchase_bonus_result = []
+        rewards_result = []
+        month_map = {sub["month"].month: sub["total"] for sub in subscriptions}
+        matchings_month_map = {sub["month"].month: sub["total"] for sub in matchings}
+        purchase_bonus_month_map = {sub["month"].month: sub["total"] for sub in purchase_bonus}
+        # rewards_month_map = {sub["month"].month: sub["total"] for sub in rewards}
+
+        for m in range(1, 13):
+            accounts_result.append({
+                "month": calendar.month_name[m],
+                "value": month_map.get(m, 0)
+            })
+            matchings_result.append({
+                "month": calendar.month_name[m],
+                "value": matchings_month_map.get(m, 0)
+            })
+            purchase_bonus_result.append({
+                "month": calendar.month_name[m],
+                "value": purchase_bonus_month_map.get(m, 0)
+            })
 
         stat_data = {
-            "subscriptions": subscriptions.count()
+            "accounts": accounts.count(),
+            "matchings": matching.count(),
+            "purchase_bonus": purchase_bonus.count(),
+            "rewards": 0,
+            "stat_data": [
+                {
+                    "label": "Enregistrements",
+                    "data": accounts_result
+                },
+                {
+                    "label": "Equilibres",
+                    "data": matchings_result
+                },
+                {
+                    "label": "Bonus achat produits",
+                    "data": purchase_bonus_result
+                },
+                {
+                    "label": "Recompenses",
+                    "data": rewards_result
+                },
+            ]
         }
 
         return Response(data=stat_data, status=status.HTTP_200_OK)
