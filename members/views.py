@@ -68,28 +68,18 @@ class OfficeViewSet(viewsets.ModelViewSet) :
         office_instance = get_object_or_404(Office, id=pk)
         search_value = request.query_params.get('search', '')
 
+        matchings_queryset = Matching.objects.all()
         if office_instance.office_type == 'head_office':
-            accounts = Account.objects.all()
-            matching = Matching.objects.all()
-            purchase_bonus = PurchaseBonus.objects.all()
+            accounts_queryset = Account.objects.all()
+            purchase_bonus_queryset = PurchaseBonus.objects.all()
         elif office_instance.office_type == 'sub_office':
-            accounts = Account.objects.filter(office=office_instance)
-            matching = Matching.objects.filter(office=office_instance)
-            purchase_bonus = PurchaseBonus.objects.filter(office=office_instance)
+            accounts_queryset = Account.objects.filter(office=office_instance)
+            purchase_bonus_queryset = PurchaseBonus.objects.filter(sale_detail__office=office_instance)
 
         current_year = datetime.now().year
 
         subscriptions = (
-            Account.objects
-            .filter(created_at__year=current_year)
-            .annotate(month=TruncMonth("created_at"))
-            .values("month")
-            .annotate(total=Count("id"))
-            .order_by("month")
-        )
-
-        matchings = (
-            Matching.objects
+            accounts_queryset
             .filter(created_at__year=current_year)
             .annotate(month=TruncMonth("created_at"))
             .values("month")
@@ -98,7 +88,7 @@ class OfficeViewSet(viewsets.ModelViewSet) :
         )
 
         purchase_bonus = (
-            PurchaseBonus.objects
+            purchase_bonus_queryset
             .filter(created_at__year=current_year)
             .annotate(month=TruncMonth("created_at"))
             .values("month")
@@ -106,33 +96,16 @@ class OfficeViewSet(viewsets.ModelViewSet) :
             .order_by("month")
         )
 
-        # rewards = (
-        #     Reward.objects
-        #     .filter(created_at__year=current_year)
-        #     .annotate(month=TruncMonth("created_at"))
-        #     .values("month")
-        #     .annotate(total=Count("id"))
-        #     .order_by("month")
-        # )
-
         # Créer une liste de 12 mois avec 0 par défaut
         accounts_result = []
-        matchings_result = []
         purchase_bonus_result = []
-        rewards_result = []
         month_map = {sub["month"].month: sub["total"] for sub in subscriptions}
-        matchings_month_map = {sub["month"].month: sub["total"] for sub in matchings}
         purchase_bonus_month_map = {sub["month"].month: sub["total"] for sub in purchase_bonus}
-        # rewards_month_map = {sub["month"].month: sub["total"] for sub in rewards}
 
         for m in range(1, 13):
             accounts_result.append({
                 "month": calendar.month_name[m],
                 "value": month_map.get(m, 0)
-            })
-            matchings_result.append({
-                "month": calendar.month_name[m],
-                "value": matchings_month_map.get(m, 0)
             })
             purchase_bonus_result.append({
                 "month": calendar.month_name[m],
@@ -140,9 +113,9 @@ class OfficeViewSet(viewsets.ModelViewSet) :
             })
 
         stat_data = {
-            "accounts": accounts.count(),
-            "matchings": matching.count(),
-            "purchase_bonus": purchase_bonus.count(),
+            "accounts": accounts_queryset.count(),
+            "matchings": matchings_queryset.count(),
+            "purchase_bonus": purchase_bonus_queryset.count(),
             "rewards": 0,
             "stat_data": [
                 {
@@ -150,17 +123,9 @@ class OfficeViewSet(viewsets.ModelViewSet) :
                     "data": accounts_result
                 },
                 {
-                    "label": "Equilibres",
-                    "data": matchings_result
-                },
-                {
                     "label": "Bonus achat produits",
                     "data": purchase_bonus_result
-                },
-                {
-                    "label": "Recompenses",
-                    "data": rewards_result
-                },
+                }
             ]
         }
 
