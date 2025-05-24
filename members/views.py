@@ -28,6 +28,7 @@ from django.conf import settings
 from django.db.models.functions import TruncMonth
 from datetime import datetime
 import calendar
+import json
 
 
 class CountryViewSet(viewsets.ModelViewSet) :
@@ -67,12 +68,18 @@ class OfficeViewSet(viewsets.ModelViewSet) :
     def statistics(self,request, pk):
         office_instance = get_object_or_404(Office, id=pk)
         search_value = request.query_params.get('search', '')
+        office_id = request.query_params.get('office_id', None)
 
-        matchings_queryset = Matching.objects.all()
         if office_instance.office_type == 'head_office':
-            accounts_queryset = Account.objects.all()
-            purchase_bonus_queryset = PurchaseBonus.objects.all()
-        elif office_instance.office_type == 'sub_office':
+            matchings_queryset = Matching.objects.all() if office_id is None or office_id == 'all' else Matching.objects.filter(grantee__office__id=office_id)
+            accounts_queryset = Account.objects.all() if office_id is None or office_id == 'all' else Account.objects.filter(office__id=office_id)
+            purchase_bonus_queryset = PurchaseBonus.objects.all() if office_id is None or office_id == 'all' else PurchaseBonus.objects.filter(sale_detail__office__id=office_id)
+            office_queryset = (
+                Office.objects.all()
+                    .values('id', 'office_code', 'location__name', 'name')
+                )
+        elif office_instance.office_type == 'sub_office' :
+            matchings_queryset = Matching.objects.filter(grantee__office=office_instance)
             accounts_queryset = Account.objects.filter(office=office_instance)
             purchase_bonus_queryset = PurchaseBonus.objects.filter(sale_detail__office=office_instance)
 
@@ -82,7 +89,7 @@ class OfficeViewSet(viewsets.ModelViewSet) :
             accounts_queryset
             .filter(created_at__year=current_year)
             .annotate(month=TruncMonth("created_at"))
-            .values("month")
+            .values("month", 'office_id')
             .annotate(total=Count("id"))
             .order_by("month")
         )
@@ -96,11 +103,22 @@ class OfficeViewSet(viewsets.ModelViewSet) :
             .order_by("month")
         )
 
+        matchings = (
+            matchings_queryset
+            .filter(created_at__year=current_year)
+            .annotate(month=TruncMonth("created_at"))
+            .values("month")
+            .annotate(total=Count("id"))
+            .order_by("month")
+        )
+
         # Créer une liste de 12 mois avec 0 par défaut
         accounts_result = []
         purchase_bonus_result = []
+        matchings_result = []
         month_map = {sub["month"].month: sub["total"] for sub in subscriptions}
         purchase_bonus_month_map = {sub["month"].month: sub["total"] for sub in purchase_bonus}
+        matchings_month_map = {sub["month"].month: sub["total"] for sub in matchings}
 
         for m in range(1, 13):
             accounts_result.append({
@@ -111,12 +129,26 @@ class OfficeViewSet(viewsets.ModelViewSet) :
                 "month": calendar.month_name[m],
                 "value": purchase_bonus_month_map.get(m, 0)
             })
+            matchings_result.append({
+                "month": calendar.month_name[m],
+                "value": matchings_month_map.get(m, 0)
+            })
+
+        
+
+       # Convertir les UUID en str
+        office_list = [
+            {k: str(v) if isinstance(v, uuid.UUID) else v for k, v in item.items()}
+            for item in office_queryset
+        ]
+
 
         stat_data = {
             "accounts": accounts_queryset.count(),
             "matchings": matchings_queryset.count(),
             "purchase_bonus": purchase_bonus_queryset.count(),
             "rewards": 0,
+            "offices": office_list,
             "stat_data": [
                 {
                     "label": "Enregistrements",
@@ -125,6 +157,10 @@ class OfficeViewSet(viewsets.ModelViewSet) :
                 {
                     "label": "Bonus achat produits",
                     "data": purchase_bonus_result
+                },
+                {
+                    "label": "Equilibres",
+                    "data": matchings_result
                 }
             ]
         }
