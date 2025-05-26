@@ -1,6 +1,6 @@
 from django.shortcuts import get_object_or_404
 from django.db import transaction
-from django.db.models import Q, Count
+from django.db.models import Q, Count, Sum
 from django.core.exceptions import ValidationError
 from rest_framework import viewsets, status
 from rest_framework.permissions import IsAuthenticated
@@ -29,6 +29,8 @@ from django.db.models.functions import TruncMonth
 from datetime import datetime
 import calendar
 import json
+from django.utils import timezone
+from datetime import timedelta
 
 
 class CountryViewSet(viewsets.ModelViewSet) :
@@ -166,6 +168,72 @@ class OfficeViewSet(viewsets.ModelViewSet) :
         }
 
         return Response(data=stat_data, status=status.HTTP_200_OK)
+
+
+
+    @action(detail=True, methods=['get'], url_path='activities')
+    def activities(self, request, pk):
+        office_instance = self.get_object()
+        filter_slug = request.query_params.get('filter', '')
+
+        now = timezone.now()
+
+        if filter_slug == 'all' :
+            purchase_bonus = PurchaseBonus.objects.filter(is_paid=False)
+            matchings = Matching.objects.filter(is_paid=False)
+            referrals = Referral.objects.filter(is_paid=False)
+        elif filter_slug == 'dayly' :
+            purchase_bonus = PurchaseBonus.objects.filter(is_paid=False, created_at__date=now.date())
+            matchings = Matching.objects.filter(is_paid=False, created_at__date=now.date())
+            referrals = Referral.objects.filter(is_paid=False, created_at__date=now.date())
+        elif filter_slug == 'weekly' :
+            start_of_week = now - timedelta(days=now.weekday())  # Lundi
+            purchase_bonus = PurchaseBonus.objects.filter(is_paid=False, created_at__date__gte=start_of_week.date())
+            matchings = Matching.objects.filter(is_paid=False, created_at__date__gte=start_of_week.date())
+            referrals = Referral.objects.filter(is_paid=False, created_at__date__gte=start_of_week.date())
+        elif filter_slug == 'monthly' :
+            purchase_bonus = PurchaseBonus.objects.filter(is_paid=False, created_at__year=now.year, created_at__month=now.month)
+            matchings = Matching.objects.filter(is_paid=False, created_at__year=now.year, created_at__month=now.month)
+            referrals = Referral.objects.filter(is_paid=False, created_at__year=now.year, created_at__month=now.month)
+
+        
+        purchase_bonus_by_user = (
+            purchase_bonus.values('grantee__id', 'grantee__company_id', 'grantee__member__first_name', 'grantee__member__last_name', 'grantee__office__office_code', 'grantee__office__name', 'grantee__office__location__name')
+            .annotate(total_bonus=Sum('amount_to_be_paid'))
+        )
+
+        matchings_by_user = (
+            matchings.values('grantee__id', 'grantee__company_id', 'grantee__member__first_name', 'grantee__member__last_name', 'grantee__office__office_code', 'grantee__office__name', 'grantee__office__location__name')
+            .annotate(total_bonus=Sum('amount'))
+        )
+
+        referrals_by_user = (
+            referrals.values('grantee__id', 'grantee__company_id', 'grantee__member__first_name', 'grantee__member__last_name', 'grantee__office__office_code', 'grantee__office__name', 'grantee__office__location__name')
+            .annotate(total_bonus=Sum('amount'))
+        )
+
+
+        bonuses = [
+            {**record, 'bonus_type': 'Achat produit(s)'}
+            for record in purchase_bonus_by_user
+        ] + [
+            {**record, 'bonus_type': 'Equilibre(s)'}
+            for record in matchings_by_user
+        ] + [
+            {**record, 'bonus_type': 'Parrainage(s)'}
+            for record in referrals_by_user
+        ]
+
+
+        activity_data = {
+            "purchase_bonus": purchase_bonus.aggregate(total=Sum('amount_to_be_paid'))['total'] or 0,
+            "matchings": matchings.aggregate(total=Sum('amount'))['total'] or 0,
+            "referrals": referrals.aggregate(total=Sum('amount'))['total'] or 0,
+            "bonuses": sorted(bonuses, key=lambda x: x.get('grantee__id', 0), reverse=True),
+        }
+
+        return Response(data=activity_data, status=status.HTTP_200_OK)
+
 
 
 
@@ -538,7 +606,16 @@ class OfficeViewSet(viewsets.ModelViewSet) :
                     exact_bonus.save()
                     return create_payment_record(office_instance, account_instance, budget, [exact_bonus])
 
-                # Étape 2: Recherche de combinaisons avec somme légèrement supérieure
+                #  if not combination_found:
+                # 2. Chercher un bonus supérieur
+                bonus_sup = bonuses.filter(amount_to_be_paid__gt=budget).first()
+                if bonus_sup:
+                    bonus_sup.amount_to_be_paid -= budget
+                    bonus_sup.save()
+                    return create_payment_record(office_instance, account_instance, budget, [bonus_sup])
+
+
+                # Étape 3: Recherche de combinaisons avec somme légèrement supérieure
                 paid_bonuses = []
                 remaining_budget = budget
 
