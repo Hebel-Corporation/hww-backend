@@ -36,7 +36,7 @@ class Matching(BonusBaseModel) :
 
 
 class PurchaseBonus(BonusBaseModel) :
-    sale_detail = models.ForeignKey("stock.SaleDetail", related_name="purchase_bonuses", null=True, on_delete=models.SET_NULL)
+    sale_detail = models.ForeignKey("stock.SaleDetail", related_name="purchase_bonuses", null=True, on_delete=models.CASCADE)
     amount_to_be_paid = models.DecimalField(max_digits=6, decimal_places=2, default=0)
 
 

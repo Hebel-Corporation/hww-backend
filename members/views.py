@@ -175,6 +175,7 @@ class OfficeViewSet(viewsets.ModelViewSet) :
     def activities(self, request, pk):
         office_instance = self.get_object()
         filter_slug = request.query_params.get('filter', '')
+        activity_type = request.query_params.get('activity_type', '')
 
         now = timezone.now()
 
@@ -197,43 +198,49 @@ class OfficeViewSet(viewsets.ModelViewSet) :
             referrals = Referral.objects.filter(is_paid=False, created_at__year=now.year, created_at__month=now.month)
 
         
+        if activity_type == 'TOTALS':
+            activity_data = {
+                "purchase_bonus": purchase_bonus.aggregate(total=Sum('amount_to_be_paid'))['total'] or 0,
+                "matchings": matchings.aggregate(total=Sum('amount'))['total'] or 0,
+                "referrals": referrals.aggregate(total=Sum('amount'))['total'] or 0,
+            }
+
+            return Response(data=activity_data, status=status.HTTP_200_OK)
+
+        
         purchase_bonus_by_user = (
             purchase_bonus.values('grantee__id', 'grantee__company_id', 'grantee__member__first_name', 'grantee__member__last_name', 'grantee__office__office_code', 'grantee__office__name', 'grantee__office__location__name')
-            .annotate(total_bonus=Sum('amount_to_be_paid'))
+            .annotate(total_bonus=Sum('amount_to_be_paid'), count=Count('id'))
         )
 
         matchings_by_user = (
             matchings.values('grantee__id', 'grantee__company_id', 'grantee__member__first_name', 'grantee__member__last_name', 'grantee__office__office_code', 'grantee__office__name', 'grantee__office__location__name')
-            .annotate(total_bonus=Sum('amount'))
+            .annotate(total_bonus=Sum('amount'), count=Count('id'))
         )
 
         referrals_by_user = (
             referrals.values('grantee__id', 'grantee__company_id', 'grantee__member__first_name', 'grantee__member__last_name', 'grantee__office__office_code', 'grantee__office__name', 'grantee__office__location__name')
-            .annotate(total_bonus=Sum('amount'))
+            .annotate(total_bonus=Sum('amount'), count=Count('id'))
         )
 
 
         bonuses = [
-            {**record, 'bonus_type': 'Achat produit(s)'}
+            {**record, 'bonus_type': 'Achat produit'+('s' if record['count'] > 1 else ''), 'bonus_type_code':'purchase_bonus'}
             for record in purchase_bonus_by_user
         ] + [
-            {**record, 'bonus_type': 'Equilibre(s)'}
+            {**record, 'bonus_type': 'Equilibre'+('s' if record['count'] > 1 else ''), 'bonus_type_code':'matching_bonus'}
             for record in matchings_by_user
         ] + [
-            {**record, 'bonus_type': 'Parrainage(s)'}
+            {**record, 'bonus_type': 'Parrainage'+('s' if record['count'] > 1 else ''), 'bonus_type_code':'referral_bonus'}
             for record in referrals_by_user
         ]
 
+        paginator = self.pagination_class()
+        paginator.page_size = 30
+        paginated_bonuses = paginator.paginate_queryset(sorted(bonuses, key=lambda x: x.get('grantee__id', 0), reverse=True), request)
 
-        activity_data = {
-            "purchase_bonus": purchase_bonus.aggregate(total=Sum('amount_to_be_paid'))['total'] or 0,
-            "matchings": matchings.aggregate(total=Sum('amount'))['total'] or 0,
-            "referrals": referrals.aggregate(total=Sum('amount'))['total'] or 0,
-            "bonuses": sorted(bonuses, key=lambda x: x.get('grantee__id', 0), reverse=True),
-        }
 
-        return Response(data=activity_data, status=status.HTTP_200_OK)
-
+        return paginator.get_paginated_response(paginated_bonuses)
 
 
 
