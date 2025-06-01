@@ -14,7 +14,7 @@ from authentication.serializers import CustomUserSerializer, CustomGroupSerializ
 from authentication.models import CustomUser
 from django.contrib.auth.models import Group
 from utils.custom_error_exceptions import UserNotStaffException, UserInvalidGroupException
-from utils.utils_functions import create_account
+from utils.utils_functions import create_account, get_period_filtered_bonus_queryset
 
 from config.serializers import SubscriptionCodeSerializer
 from config.models import SubscriptionCode
@@ -174,28 +174,28 @@ class OfficeViewSet(viewsets.ModelViewSet) :
     @action(detail=True, methods=['get'], url_path='activities')
     def activities(self, request, pk):
         office_instance = self.get_object()
-        filter_slug = request.query_params.get('filter', '')
+        period_filter = request.query_params.get('filter', '')
         activity_type = request.query_params.get('activity_type', '')
 
         now = timezone.now()
 
-        if filter_slug == 'all' :
-            purchase_bonus = PurchaseBonus.objects.filter(is_paid=False)
-            matchings = Matching.objects.filter(is_paid=False)
-            referrals = Referral.objects.filter(is_paid=False)
-        elif filter_slug == 'dayly' :
-            purchase_bonus = PurchaseBonus.objects.filter(is_paid=False, created_at__date=now.date())
-            matchings = Matching.objects.filter(is_paid=False, created_at__date=now.date())
-            referrals = Referral.objects.filter(is_paid=False, created_at__date=now.date())
-        elif filter_slug == 'weekly' :
+        if period_filter == 'all' :
+            purchase_bonus = PurchaseBonus.objects.filter(is_paid=False).order_by('-created_at')
+            matchings = Matching.objects.filter(is_paid=False).order_by('-created_at')
+            referrals = Referral.objects.filter(is_paid=False).order_by('-created_at')
+        elif period_filter == 'dayly' :
+            purchase_bonus = PurchaseBonus.objects.filter(is_paid=False, created_at__date=now.date()).order_by('-created_at')
+            matchings = Matching.objects.filter(is_paid=False, created_at__date=now.date()).order_by('-created_at')
+            referrals = Referral.objects.filter(is_paid=False, created_at__date=now.date()).order_by('-created_at')
+        elif period_filter == 'weekly' :
             start_of_week = now - timedelta(days=now.weekday())  # Lundi
-            purchase_bonus = PurchaseBonus.objects.filter(is_paid=False, created_at__date__gte=start_of_week.date())
-            matchings = Matching.objects.filter(is_paid=False, created_at__date__gte=start_of_week.date())
-            referrals = Referral.objects.filter(is_paid=False, created_at__date__gte=start_of_week.date())
-        elif filter_slug == 'monthly' :
-            purchase_bonus = PurchaseBonus.objects.filter(is_paid=False, created_at__year=now.year, created_at__month=now.month)
-            matchings = Matching.objects.filter(is_paid=False, created_at__year=now.year, created_at__month=now.month)
-            referrals = Referral.objects.filter(is_paid=False, created_at__year=now.year, created_at__month=now.month)
+            purchase_bonus = PurchaseBonus.objects.filter(is_paid=False, created_at__date__gte=start_of_week.date()).order_by('-created_at')
+            matchings = Matching.objects.filter(is_paid=False, created_at__date__gte=start_of_week.date()).order_by('-created_at')
+            referrals = Referral.objects.filter(is_paid=False, created_at__date__gte=start_of_week.date()).order_by('-created_at')
+        elif period_filter == 'monthly' :
+            purchase_bonus = PurchaseBonus.objects.filter(is_paid=False, created_at__year=now.year, created_at__month=now.month).order_by('-created_at')
+            matchings = Matching.objects.filter(is_paid=False, created_at__year=now.year, created_at__month=now.month).order_by('-created_at')
+            referrals = Referral.objects.filter(is_paid=False, created_at__year=now.year, created_at__month=now.month).order_by('-created_at')
 
         
         if activity_type == 'TOTALS':
@@ -851,6 +851,7 @@ class AccountViewSet(viewsets.ModelViewSet) :
     def member_referrals(self, request, pk):
         account_instance = self.get_object()
         search_value = request.query_params.get('search', '')
+        period_filter = request.query_params.get('period_filter', '')
 
         referral_queryset = Referral.objects.filter(grantee=account_instance).order_by('is_paid')
 
@@ -861,6 +862,10 @@ class AccountViewSet(viewsets.ModelViewSet) :
                 Q(downline__member__company_id__icontains=search_value) |
                 Q(downline__company_id__icontains=search_value)
             )
+
+        
+        if period_filter :
+            referral_queryset = get_period_filtered_bonus_queryset(referral_queryset, period_filter)
 
         # Appliquer le filtre Django Filter
         filter_instance = ReferralFilter(request.GET, queryset=referral_queryset)
@@ -879,7 +884,7 @@ class AccountViewSet(viewsets.ModelViewSet) :
     def member_matchings(self, request, pk):
         account_instance = self.get_object()
         search_value = request.query_params.get('search', '')
-        # search_value = request.query_params.get('search', '')
+        period_filter = request.query_params.get('period_filter', '')
 
         matching_queryset = Matching.objects.filter(grantee=account_instance).order_by('is_paid')
 
@@ -890,6 +895,10 @@ class AccountViewSet(viewsets.ModelViewSet) :
                 Q(downlines__member__company_id__icontains=search_value) |
                 Q(downlines__company_id__icontains=search_value)
             ).distinct()
+
+
+        if period_filter :
+            matching_queryset = get_period_filtered_bonus_queryset(matching_queryset, period_filter)
 
 
         # Appliquer le filtre Django Filter
@@ -909,6 +918,7 @@ class AccountViewSet(viewsets.ModelViewSet) :
     def member_purchases(self, request, pk):
         account_instance = self.get_object()
         search_value = request.query_params.get('search', '')
+        period_filter = request.query_params.get('period_filter', '')
 
         purchase_bonus_queryset = PurchaseBonus.objects.filter(grantee=account_instance).order_by('is_paid')
 
@@ -918,6 +928,9 @@ class AccountViewSet(viewsets.ModelViewSet) :
                 Q(sale_detail__member_account__last_name__icontains=search_value) |
                 Q(sale_detail__member_account__company_id__icontains=search_value)
             )
+
+        if period_filter :
+            purchase_bonus_queryset = get_period_filtered_bonus_queryset(purchase_bonus_queryset, period_filter)
 
         # Appliquer le filtre Django Filter
         filter_instance = PurchaseBonusFilter(request.GET, queryset=purchase_bonus_queryset)

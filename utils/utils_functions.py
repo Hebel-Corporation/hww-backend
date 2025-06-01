@@ -1,5 +1,7 @@
 import random
 from django.conf import settings
+from django.utils import timezone
+from datetime import timedelta
 
 
 def generate_subcription_code() -> str :
@@ -108,4 +110,22 @@ def create_pairing_bonuses(new_member_account, upline, position:str):
 
 def has_paid_maintenance(account_instance) :
     return account_instance.payments.filter(type='maintenance').exists()
+
+
+
+
+def get_period_filtered_bonus_queryset(queryset, period_filter):
+    now = timezone.now()
+
+    if period_filter == 'all' :
+        queryset = queryset.all().order_by('-created_at')
+    elif period_filter == 'dayly' :
+        queryset = queryset.filter(created_at__date=now.date()).order_by('-created_at')
+    elif period_filter == 'weekly' :
+        start_of_week = now - timedelta(days=now.weekday())
+        queryset = queryset.filter(created_at__date__gte=start_of_week.date()).order_by('-created_at')
+    elif period_filter == 'monthly' :
+        queryset = queryset.filter(created_at__year=now.year, created_at__month=now.month).order_by('-created_at')
+
+    return queryset
 
