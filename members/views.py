@@ -72,6 +72,11 @@ class OfficeViewSet(viewsets.ModelViewSet) :
         search_value = request.query_params.get('search', '')
         office_id = request.query_params.get('office_id', None)
 
+        matchings_queryset = []
+        accounts_queryset = []
+        purchase_bonus_queryset = []
+        office_queryset = []
+
         if office_instance.office_type == 'head_office':
             matchings_queryset = Matching.objects.all() if office_id is None or office_id == 'all' else Matching.objects.filter(grantee__office__id=office_id)
             accounts_queryset = Account.objects.all() if office_id is None or office_id == 'all' else Account.objects.filter(office__id=office_id)
@@ -139,10 +144,11 @@ class OfficeViewSet(viewsets.ModelViewSet) :
         
 
        # Convertir les UUID en str
-        office_list = [
-            {k: str(v) if isinstance(v, uuid.UUID) else v for k, v in item.items()}
-            for item in office_queryset
-        ]
+        if office_queryset is not None :
+            office_list = [
+                {k: str(v) if isinstance(v, uuid.UUID) else v for k, v in item.items()}
+                for item in office_queryset
+            ]
 
 
         stat_data = {
