@@ -11,7 +11,13 @@ class ReferralAdmin(admin.ModelAdmin):
 
 @admin.register(Matching)
 class MatchingAdmin(admin.ModelAdmin):
-    list_display = ['grantee', 'amount', 'is_paid', 'created_at']
+    list_display = ['grantee', 'display_downlines', 'amount', 'is_paid', 'created_at']
+    filter_horizontal = ('downlines',)
+
+
+    def display_downlines(self, obj):
+        return " --&&-- ".join(tag.member.company_id for tag in obj.downlines.all())
+    display_downlines.short_description = 'Downlines'
 
 
 
