@@ -1,6 +1,6 @@
 from django.shortcuts import get_object_or_404
 from django.db import transaction
-from django.db.models import Q, Count, Sum
+from django.db.models import Q, Count, Sum, Min
 from django.core.exceptions import ValidationError
 from rest_framework import viewsets, status
 from rest_framework.permissions import IsAuthenticated
@@ -215,18 +215,26 @@ class OfficeViewSet(viewsets.ModelViewSet) :
 
         
         purchase_bonus_by_user = (
-            purchase_bonus.values('grantee__id', 'grantee__company_id', 'grantee__member__first_name', 'grantee__member__last_name', 'grantee__office__office_code', 'grantee__office__name', 'grantee__office__location__name')
-            .annotate(total_bonus=Sum('amount_to_be_paid'), count=Count('id'))
+            purchase_bonus
+            .values('grantee_id', 'grantee__id', 'grantee__company_id', 'grantee__member__first_name', 'grantee__member__last_name', 'grantee__office__office_code', 'grantee__office__name', 'grantee__office__location__name')
+            .annotate(count=Count('id'), total_bonus=Sum('amount_to_be_paid'))
+            .order_by('grantee_id')
         )
+
 
         matchings_by_user = (
-            matchings.values('grantee__id', 'grantee__company_id', 'grantee__member__first_name', 'grantee__member__last_name', 'grantee__office__office_code', 'grantee__office__name', 'grantee__office__location__name')
-            .annotate(total_bonus=Sum('amount'), count=Count('id'))
+            matchings
+            .values('grantee_id', 'grantee__id', 'grantee__company_id', 'grantee__member__first_name', 'grantee__member__last_name', 'grantee__office__office_code', 'grantee__office__name', 'grantee__office__location__name')
+            .annotate(count=Count('id'), total_bonus=Sum('amount'))
+            .order_by('grantee_id')
         )
+        
 
         referrals_by_user = (
-            referrals.values('grantee__id', 'grantee__company_id', 'grantee__member__first_name', 'grantee__member__last_name', 'grantee__office__office_code', 'grantee__office__name', 'grantee__office__location__name')
-            .annotate(total_bonus=Sum('amount'), count=Count('id'))
+            referrals
+            .values('grantee_id', 'grantee__id', 'grantee__company_id', 'grantee__member__first_name', 'grantee__member__last_name', 'grantee__office__office_code', 'grantee__office__name', 'grantee__office__location__name')
+            .annotate(count=Count('id'), total_bonus=Sum('amount'))
+            .order_by('grantee_id')
         )
 
 
@@ -240,6 +248,8 @@ class OfficeViewSet(viewsets.ModelViewSet) :
             {**record, 'bonus_type': 'Parrainage'+('s' if record['count'] > 1 else ''), 'bonus_type_code':'referral_bonus'}
             for record in referrals_by_user
         ]
+
+        print("================>>>>>>> #2 : ", len(bonuses))
 
         paginator = self.pagination_class()
         paginator.page_size = 30
@@ -520,16 +530,10 @@ class OfficeViewSet(viewsets.ModelViewSet) :
         budget = api_data.get('amount')
         account_instance = get_object_or_404(Account, id=api_data.get('account'))
         if 2 == 4:
-            return Response(
-                {"error": "Cet compte n'a pas encore payé la maintenance"}, 
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            raise ValidationError("Cet compte n'a pas encore payé la maintenance")
 
         if not budget or budget <= 0:
-            return Response(
-                {"error": "Le montant du paiement est invalide"}, 
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            raise ValidationError("Le montant du paiement est invalide")
 
         try:
             # with transaction.atomic():
@@ -609,7 +613,7 @@ class OfficeViewSet(viewsets.ModelViewSet) :
                 ).order_by('amount_to_be_paid')
 
                 if not bonuses.exists():
-                    return Response({"error": "Aucun bonus d'achat disponible"}, status=status.HTTP_400_BAD_REQUEST)
+                    raise ValidationError("Aucun bonus d'achat disponible")
 
                 # Étape 1: Recherche de bonus exact
                 exact_bonus = bonuses.filter(amount_to_be_paid=budget).first()
@@ -654,18 +658,12 @@ class OfficeViewSet(viewsets.ModelViewSet) :
                         break
 
                 if not paid_bonuses:
-                    return Response(
-                        {"error": "Aucun bonus d'achat produit disponible pour ce montant"}, 
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
+                    raise ValidationError("Aucun bonus d'achat produit disponible pour ce montant")
 
                 return create_payment_record(office_instance, account_instance, budget, paid_bonuses)
 
         except Exception as e:
-            return Response(
-                {"error": str(e)}, 
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            raise ValidationError(str(e))
 
 
 
