@@ -4,6 +4,7 @@ from django.db.models import Q, Count, Sum, Min
 from django.core.exceptions import ValidationError
 from rest_framework import viewsets, status
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.exceptions import NotFound
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.filters import SearchFilter
@@ -75,16 +76,11 @@ class OfficeViewSet(viewsets.ModelViewSet) :
         matchings_queryset = []
         accounts_queryset = []
         purchase_bonus_queryset = []
-        office_queryset = []
 
         if office_instance.office_type == 'head_office':
             matchings_queryset = Matching.objects.all() if office_id is None or office_id == 'all' else Matching.objects.filter(grantee__office__id=office_id)
             accounts_queryset = Account.objects.all() if office_id is None or office_id == 'all' else Account.objects.filter(office__id=office_id)
             purchase_bonus_queryset = PurchaseBonus.objects.all() if office_id is None or office_id == 'all' else PurchaseBonus.objects.filter(sale_detail__office__id=office_id)
-            office_queryset = (
-                Office.objects.all()
-                    .values('id', 'office_code', 'location__name', 'name')
-                )
         elif office_instance.office_type == 'sub_office' :
             matchings_queryset = Matching.objects.filter(grantee__office=office_instance)
             accounts_queryset = Account.objects.filter(office=office_instance)
@@ -141,22 +137,12 @@ class OfficeViewSet(viewsets.ModelViewSet) :
                 "value": matchings_month_map.get(m, 0)
             })
 
-        
-
-       # Convertir les UUID en str
-        if office_queryset is not None :
-            office_list = [
-                {k: str(v) if isinstance(v, uuid.UUID) else v for k, v in item.items()}
-                for item in office_queryset
-            ]
-
 
         stat_data = {
             "accounts": accounts_queryset.count(),
             "matchings": matchings_queryset.count(),
             "purchase_bonus": purchase_bonus_queryset.count(),
             "rewards": 0,
-            "offices": office_list,
             "stat_data": [
                 {
                     "label": "Enregistrements",
@@ -182,6 +168,7 @@ class OfficeViewSet(viewsets.ModelViewSet) :
         office_instance = self.get_object()
         period_filter = request.query_params.get('filter', '')
         activity_type = request.query_params.get('activity_type', '')
+        office_id = request.query_params.get('office_filter', None)
 
         now = timezone.now()
 
@@ -202,6 +189,13 @@ class OfficeViewSet(viewsets.ModelViewSet) :
             purchase_bonus = PurchaseBonus.objects.filter(is_paid=False, created_at__year=now.year, created_at__month=now.month).order_by('-created_at')
             matchings = Matching.objects.filter(is_paid=False, created_at__year=now.year, created_at__month=now.month).order_by('-created_at')
             referrals = Referral.objects.filter(is_paid=False, created_at__year=now.year, created_at__month=now.month).order_by('-created_at')
+
+
+        
+        if office_id and office_id != 'all' :
+            purchase_bonus = purchase_bonus.filter(grantee__office__id=office_id)
+            matchings = matchings.filter(grantee__office__id=office_id)
+            referrals = referrals.filter(grantee__office__id=office_id)
 
         
         if activity_type == 'TOTALS':
@@ -252,7 +246,18 @@ class OfficeViewSet(viewsets.ModelViewSet) :
 
         paginator = self.pagination_class()
         paginator.page_size = 30
-        paginated_bonuses = paginator.paginate_queryset(sorted(bonuses, key=lambda x: x.get('grantee__id', 0), reverse=True), request)
+
+        sorted_bonuses = sorted(bonuses, key=lambda x: x.get('grantee__id', 0), reverse=True)
+        try:
+            paginated_bonuses = paginator.paginate_queryset(sorted_bonuses, request)
+        except NotFound:
+            # Forcer la page à 1 si la page demandée n'existe pas
+            request.GET._mutable = True  # Permet de modifier les paramètres GET
+            request.GET['page'] = '1'
+            request.GET._mutable = False
+            paginated_bonuses = paginator.paginate_queryset(sorted_bonuses, request)
+        
+        # paginated_bonuses = paginator.paginate_queryset(sorted(bonuses, key=lambda x: x.get('grantee__id', 0), reverse=True), request)
 
 
         return paginator.get_paginated_response(paginated_bonuses)
