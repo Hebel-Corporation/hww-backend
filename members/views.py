@@ -249,7 +249,6 @@ class OfficeViewSet(viewsets.ModelViewSet) :
             for record in referrals_by_user
         ]
 
-        print("================>>>>>>> #2 : ", len(bonuses))
 
         paginator = self.pagination_class()
         paginator.page_size = 30
