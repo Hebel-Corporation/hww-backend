@@ -81,7 +81,7 @@ def create_pairing_bonuses(new_member_account, upline, position:str):
         new_downline_leg_length = new_downline_side_direct_downline.get_descendants(include_self=True).count() if new_downline_side_direct_downline else 0 #new_downline_side_direct_downline.get_descendant_count() + 1 
         opposite_leg_lenght = opposite_direct_downline.get_descendants(include_self=True).count() if opposite_direct_downline else 0 #opposite_direct_downline.get_descendant_count() + 1
     
-        if new_downline_leg_length - 1 < opposite_leg_lenght:
+        if new_downline_leg_length - 1 < opposite_leg_lenght and upline.get_referral_count:
 
             pairing_downline = list(opposite_direct_downline.get_descendants(include_self=True).order_by('created_at'))[new_downline_leg_length-1]
 
