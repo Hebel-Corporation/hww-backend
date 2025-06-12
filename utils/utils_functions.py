@@ -96,7 +96,8 @@ def create_pairing_bonuses(new_member_account, upline, position:str):
 
                 matching =  Matching.objects.create(
                     grantee = upline,
-                    amount = amount 
+                    amount = amount,
+                    office = new_member_account.office
                 )
 
                 matching.downlines.set([new_member_account,pairing_downline])

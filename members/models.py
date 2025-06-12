@@ -198,7 +198,8 @@ class Subscription(models.Model) :
             referral_price = Referral.objects.create(
                 grantee = self.member_account.referral_account,
                 downline = self.member_account,
-                amount = self.package.price * Decimal('0.2') # 20% du prix du package
+                amount = self.package.price * Decimal('0.2'), # 20% du prix du package
+                office = self.office
             )
             referral_price.save()
 

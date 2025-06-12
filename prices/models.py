@@ -10,6 +10,7 @@ class BonusBaseModel(models.Model):
     id = models.UUIDField(_("Unique ID"), primary_key=True, default=uuid.uuid4, editable=False)
     grantee = models.ForeignKey("members.Account", verbose_name=_("Grantee account"), on_delete=models.CASCADE)
     amount = models.DecimalField(max_digits=6, decimal_places=2)
+    office = models.ForeignKey("members.Office", null=True, on_delete=models.SET_NULL)
     is_paid = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

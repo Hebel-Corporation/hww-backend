@@ -78,13 +78,13 @@ class OfficeViewSet(viewsets.ModelViewSet) :
         purchase_bonus_queryset = []
 
         if office_instance.office_type == 'head_office':
-            matchings_queryset = Matching.objects.all() if office_id is None or office_id == 'all' else Matching.objects.filter(grantee__office__id=office_id)
+            matchings_queryset = Matching.objects.all() if office_id is None or office_id == 'all' else Matching.objects.filter(office__id=office_id)
             accounts_queryset = Account.objects.all() if office_id is None or office_id == 'all' else Account.objects.filter(office__id=office_id)
-            purchase_bonus_queryset = PurchaseBonus.objects.all() if office_id is None or office_id == 'all' else PurchaseBonus.objects.filter(sale_detail__office__id=office_id)
+            purchase_bonus_queryset = PurchaseBonus.objects.all() if office_id is None or office_id == 'all' else PurchaseBonus.objects.filter(office__id=office_id)
         elif office_instance.office_type == 'sub_office' :
-            matchings_queryset = Matching.objects.filter(grantee__office=office_instance)
+            matchings_queryset = Matching.objects.filter(office=office_instance)
             accounts_queryset = Account.objects.filter(office=office_instance)
-            purchase_bonus_queryset = PurchaseBonus.objects.filter(sale_detail__office=office_instance)
+            purchase_bonus_queryset = PurchaseBonus.objects.filter(office=office_instance)
 
         current_year = datetime.now().year
 
@@ -193,16 +193,44 @@ class OfficeViewSet(viewsets.ModelViewSet) :
 
         
         if office_id and office_id != 'all' :
-            purchase_bonus = purchase_bonus.filter(grantee__office__id=office_id)
-            matchings = matchings.filter(grantee__office__id=office_id)
-            referrals = referrals.filter(grantee__office__id=office_id)
+            purchase_bonus = purchase_bonus.filter(office__id=office_id)
+            matchings = matchings.filter(office__id=office_id)
+            referrals = referrals.filter(office__id=office_id)
 
         
         if activity_type == 'TOTALS':
+
+            subscriptions = Subscription.objects.all()
+
+            if office_id and office_id != 'all' :
+                subscriptions = subscriptions.filter(office__id=office_id)
+
+            if period_filter == 'all' :
+                pass
+            elif period_filter == 'dayly' :
+                subscriptions = subscriptions.filter(created_at__date=now.date())
+            elif period_filter == 'weekly' :
+                start_of_week = now - timedelta(days=now.weekday()) 
+                subscriptions = subscriptions.filter(created_at__date__gte=start_of_week.date())
+            elif period_filter == 'monthly' :
+                subscriptions = subscriptions.filter(created_at__year=now.year, created_at__month=now.month)
+
+            total_matchings = matchings.aggregate(total=Sum('amount'))['total'] or 0
+            total_referrals = referrals.aggregate(total=Sum('amount'))['total'] or 0
+            total_purchase_bonus = purchase_bonus.aggregate(total=Sum('amount_to_be_paid'))['total'] or 0
+
+            total_bonuses = total_matchings + total_referrals + total_purchase_bonus
+            total_received = subscriptions.aggregate(total=Sum('package__price'))['total'] or 0 + purchase_bonus.aggregate(total=Sum('sale_detail__amount'))['total'] or 0
+
+
             activity_data = {
-                "purchase_bonus": purchase_bonus.aggregate(total=Sum('amount_to_be_paid'))['total'] or 0,
-                "matchings": matchings.aggregate(total=Sum('amount'))['total'] or 0,
-                "referrals": referrals.aggregate(total=Sum('amount'))['total'] or 0,
+                "purchase_bonus": total_purchase_bonus,
+                "matchings": total_matchings,
+                "referrals": total_referrals,
+                "balance": {
+                    "total_received": total_received,
+                    "sold": total_received - total_bonuses
+                }
             }
 
             return Response(data=activity_data, status=status.HTTP_200_OK)
