@@ -4,14 +4,14 @@ from .models import *
 
 @admin.register(Referral)
 class ReferralAdmin(admin.ModelAdmin):
-    list_display = ['grantee', 'downline', 'amount', 'is_paid', 'created_at']
+    list_display = ['grantee', 'downline', 'amount', 'office', 'is_paid', 'created_at']
 
 
 
 
 @admin.register(Matching)
 class MatchingAdmin(admin.ModelAdmin):
-    list_display = ['grantee', 'display_downlines', 'amount', 'is_paid', 'created_at']
+    list_display = ['grantee', 'display_downlines', 'amount', 'office', 'is_paid', 'created_at']
     filter_horizontal = ('downlines',)
 
 
@@ -24,7 +24,7 @@ class MatchingAdmin(admin.ModelAdmin):
 
 @admin.register(PurchaseBonus)
 class PurchaseBonusAdmin(admin.ModelAdmin):
-    list_display = ['grantee', 'amount', 'amount_to_be_paid', 'is_paid', 'created_at']
+    list_display = ['grantee', 'amount', 'amount_to_be_paid', 'office', 'is_paid', 'created_at']
 
 
 

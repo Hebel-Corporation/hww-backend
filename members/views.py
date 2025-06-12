@@ -177,7 +177,7 @@ class OfficeViewSet(viewsets.ModelViewSet) :
             purchase_bonus = PurchaseBonus.objects.filter(is_paid=False).order_by('-created_at')
             matchings = Matching.objects.filter(is_paid=False).order_by('-created_at')
             referrals = Referral.objects.filter(is_paid=False).order_by('-created_at')
-        elif period_filter == 'dayly' :
+        elif period_filter == 'daily' :
             purchase_bonus = PurchaseBonus.objects.filter(is_paid=False, created_at__date=now.date()).order_by('-created_at')
             matchings = Matching.objects.filter(is_paid=False, created_at__date=now.date()).order_by('-created_at')
             referrals = Referral.objects.filter(is_paid=False, created_at__date=now.date()).order_by('-created_at')
@@ -193,10 +193,14 @@ class OfficeViewSet(viewsets.ModelViewSet) :
 
 
         
-        if office_id and office_id != 'all' :
+        if office_id and office_id != 'all' and office_instance.office_type == 'head_office' :
             purchase_bonus = purchase_bonus.filter(office__id=office_id)
             matchings = matchings.filter(office__id=office_id)
             referrals = referrals.filter(office__id=office_id)
+        elif office_instance.office_type == 'sub_office':
+            purchase_bonus = purchase_bonus.filter(office=office_instance)
+            matchings = matchings.filter(office=office_instance)
+            referrals = referrals.filter(office=office_instance)
 
         
         if activity_type == 'TOTALS':
@@ -215,12 +219,14 @@ class OfficeViewSet(viewsets.ModelViewSet) :
                 member_account__in=all_bonus_ids
             )
 
-            if office_id and office_id != 'all' :
+            if office_id and office_id != 'all' and office_instance.office_type == 'head_office' :
                 subscriptions = subscriptions.filter(office__id=office_id)
+            elif office_instance.office_type == 'sub_office':
+                subscriptions = subscriptions.filter(office=office_instance)
 
             if period_filter == 'all' :
                 pass
-            elif period_filter == 'dayly' :
+            elif period_filter == 'daily' :
                 subscriptions = subscriptions.filter(created_at__date=now.date())
             elif period_filter == 'weekly' :
                 start_of_week = now - timedelta(days=now.weekday()) 
@@ -251,7 +257,7 @@ class OfficeViewSet(viewsets.ModelViewSet) :
         
         purchase_bonus_by_user = (
             purchase_bonus
-            .values('grantee_id', 'grantee__id', 'grantee__company_id', 'grantee__member__first_name', 'grantee__member__last_name', 'grantee__office__office_code', 'grantee__office__name', 'grantee__office__location__name')
+            .values('grantee_id', 'grantee__id', 'grantee__company_id', 'grantee__member__first_name', 'grantee__member__last_name', 'office__office_code', 'office__name', 'office__location__name')
             .annotate(count=Count('id'), total_bonus=Sum('amount_to_be_paid'))
             .order_by('grantee_id')
         )
@@ -259,7 +265,7 @@ class OfficeViewSet(viewsets.ModelViewSet) :
 
         matchings_by_user = (
             matchings
-            .values('grantee_id', 'grantee__id', 'grantee__company_id', 'grantee__member__first_name', 'grantee__member__last_name', 'grantee__office__office_code', 'grantee__office__name', 'grantee__office__location__name')
+            .values('grantee_id', 'grantee__id', 'grantee__company_id', 'grantee__member__first_name', 'grantee__member__last_name', 'office__office_code', 'office__name', 'office__location__name')
             .annotate(count=Count('id'), total_bonus=Sum('amount'))
             .order_by('grantee_id')
         )
@@ -267,7 +273,7 @@ class OfficeViewSet(viewsets.ModelViewSet) :
 
         referrals_by_user = (
             referrals
-            .values('grantee_id', 'grantee__id', 'grantee__company_id', 'grantee__member__first_name', 'grantee__member__last_name', 'grantee__office__office_code', 'grantee__office__name', 'grantee__office__location__name')
+            .values('grantee_id', 'grantee__id', 'grantee__company_id', 'grantee__member__first_name', 'grantee__member__last_name', 'office__office_code', 'office__name', 'office__location__name')
             .annotate(count=Count('id'), total_bonus=Sum('amount'))
             .order_by('grantee_id')
         )
@@ -901,8 +907,11 @@ class AccountViewSet(viewsets.ModelViewSet) :
         account_instance = self.get_object()
         search_value = request.query_params.get('search', '')
         period_filter = request.query_params.get('period_filter', '')
+        office_code = request.query_params.get('office_code', '')
 
         referral_queryset = Referral.objects.filter(grantee=account_instance).order_by('is_paid')
+        if office_code :
+            referral_queryset = referral_queryset.filter(office__office_code=office_code)
 
         if search_value:
             referral_queryset = Referral.objects.filter(
@@ -934,8 +943,11 @@ class AccountViewSet(viewsets.ModelViewSet) :
         account_instance = self.get_object()
         search_value = request.query_params.get('search', '')
         period_filter = request.query_params.get('period_filter', '')
+        office_code = request.query_params.get('office_code', '')
 
         matching_queryset = Matching.objects.filter(grantee=account_instance).order_by('is_paid')
+        if office_code :
+            matching_queryset = matching_queryset.filter(office__office_code=office_code)
 
         if search_value:
             matching_queryset = matching_queryset.filter(
@@ -968,8 +980,11 @@ class AccountViewSet(viewsets.ModelViewSet) :
         account_instance = self.get_object()
         search_value = request.query_params.get('search', '')
         period_filter = request.query_params.get('period_filter', '')
+        office_code = request.query_params.get('office_code', '')
 
         purchase_bonus_queryset = PurchaseBonus.objects.filter(grantee=account_instance).order_by('is_paid')
+        if office_code :
+            purchase_bonus_queryset = purchase_bonus_queryset.filter(office__office_code=office_code)
 
         if search_value:
             purchase_bonus_queryset = purchase_bonus_queryset.filter(

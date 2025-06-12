@@ -120,7 +120,7 @@ def get_period_filtered_bonus_queryset(queryset, period_filter):
 
     if period_filter == 'all' :
         queryset = queryset.all().order_by('-created_at')
-    elif period_filter == 'dayly' :
+    elif period_filter == 'daily' :
         queryset = queryset.filter(created_at__date=now.date()).order_by('-created_at')
     elif period_filter == 'weekly' :
         start_of_week = now - timedelta(days=now.weekday())

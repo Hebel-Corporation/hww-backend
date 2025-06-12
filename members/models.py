@@ -91,7 +91,7 @@ class Account(MPTTModel) :
     referral_account = models.ForeignKey('self', verbose_name=_("Referral account"), null=True, blank=True, on_delete=models.CASCADE)
     parent = TreeForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='children')
     position = models.CharField(_("Position at Sponsor"), choices=POSITION, default='left', null=True, blank=True, max_length=10, editable=False)
-    office = models.ForeignKey('members.Office', verbose_name=_("Account Office Recorder"), related_name="account_offices_set", blank=True, null=True, on_delete=models.SET_NULL)
+    office = models.ForeignKey('members.Office', related_name="account_offices_set", blank=True, null=True, on_delete=models.SET_NULL)
     rewards = models.ManyToManyField("prices.Reward", verbose_name=_("Account rewards"), blank=True)
     is_active = models.BooleanField(_('Is active'), default=True)
     created_at = models.DateTimeField(_("Date"), auto_now=False, auto_now_add=True)
