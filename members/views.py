@@ -213,11 +213,11 @@ class OfficeViewSet(viewsets.ModelViewSet) :
                 if mt.downlines.exists()
             ]
 
-            all_bonus_ids = list(chain(referral_ids, purchase_bonus_ids, recent_matching_ids))
+            all_bonus_ids = list(set(chain(referral_ids, purchase_bonus_ids, recent_matching_ids)))
 
             subscriptions = Subscription.objects.filter(
                 member_account__in=all_bonus_ids
-            )
+            ).distinct()
 
             if office_id and office_id != 'all' and office_instance.office_type == 'head_office' :
                 subscriptions = subscriptions.filter(office__id=office_id)
