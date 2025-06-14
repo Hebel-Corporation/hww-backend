@@ -24,7 +24,8 @@ class SaleDetail(models.Model):
                 grantee = self.member_account.referral_account,
                 sale_detail = self,
                 amount = self.amount * Decimal('0.4'), # 40% du monant total des protuits
-                amount_to_be_paid = self.amount * Decimal('0.4')
+                amount_to_be_paid = self.amount * Decimal('0.4'),
+                office = self.office
             )
             referral_price.save()
 
