@@ -45,11 +45,59 @@ class PurchaseBonus(BonusBaseModel) :
         verbose_name_plural = "Purchase bonuses"
 
 
-class Reward(models.Model) :
-    pass
+
+class Gift(models.Model) :
+    id = models.UUIDField("_ID", primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=100)
+    image = models.ImageField(upload_to='media/gifts', null=True, blank=True)
+    mark = models.CharField(max_length=50, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+
+    def __str__(self) -> str:
+        return self.name
 
 
 
+class RewardBase(models.Model) :
+
+    UNITS_TYPE = (
+        ('matching', 'Equilibres'),
+        ('referral', 'Parrainages')
+    )
+
+    id = models.UUIDField("_ID", primary_key=True, default=uuid.uuid4, editable=False)
+    title = models.CharField(max_length=100, null=True, blank=True)
+    description = models.TextField(null=True, blank=True)
+    equivalent_amount = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    unit_number = models.IntegerField(null=True, blank=True)
+    unit_type = models.CharField(max_length=50, choices=UNITS_TYPE, null=True, blank=True)
+    gift = models.ForeignKey("prices.Gift", null=True, blank=True, on_delete=models.SET_NULL)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        abstract = True
+
+
+
+class Reward(RewardBase) :
+
+    def __str__(self) -> str:
+        return str(self.unit_number) + " " + self.unit_type
+
+
+
+class Promotion(RewardBase) :
+    start_date = models.DateTimeField(null=True, blank=True)
+    end_date = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self) -> str:
+        return self.start_date.strftime('%Y-%m-%d') + " - " + self.end_date.strftime('%Y-%m-%d')
+    
+    
 
 
 class Payment(models.Model):

@@ -130,3 +130,80 @@ def get_period_filtered_bonus_queryset(queryset, period_filter):
 
     return queryset
 
+
+
+
+def check_all_rewards(account):
+    """
+    Attribue les récompenses permanentes à un membre (équilibres ou referrals)
+    """
+
+    from prices.models import Reward
+
+    rewards = Reward.objects.filter(is_active=True).order_by('unit_number')
+
+    for reward in rewards:
+        if reward.unit_type == 'matching':
+            count = account.get_matching_count
+        elif reward.unit_type == 'referral':
+            count = account.get_referral_count
+        else:
+            continue
+
+        if count >= reward.unit_number:
+            if reward not in account.rewards.all():
+                account.rewards.add(reward)
+
+
+
+
+def check_all_promotions(account):
+    """
+    Vérifie le palier de promotion atteint et assigne UNIQUEMENT le plus haut niveau.
+    """
+
+    from prices.models import Promotion, Matching, Referral
+
+    now = timezone.now()
+    promotions = Promotion.objects.filter(
+        is_active=True,
+        start_date__lte=now,
+        end_date__gte=now
+    ).order_by('-unit_number')  # Trier du plus haut au plus bas
+
+    best_promo = None
+
+    for promo in promotions:
+        if promo.unit_type == 'matching':
+            count = Matching.objects.filter(
+                grantee=account,
+                is_validated=True,
+                created_at__range=(promo.start_date, promo.end_date)
+            ).count()
+        elif promo.unit_type == 'referral':
+            count = Referral.objects.filter(
+                grantee=account,
+                created_at__range=(promo.start_date, promo.end_date)
+            ).count()
+        else:
+            continue
+
+        if count >= promo.unit_number:
+            best_promo = promo
+            break  # Le premier qu’on trouve (car trié du plus haut au plus bas)
+
+    if best_promo:
+        # Enlever les anciennes promotions de cette période
+        active_promos = account.promotions.filter(
+            start_date__lte=now,
+            end_date__gte=now,
+            unit_type=best_promo.unit_type
+        )
+
+        for old in active_promos:
+            if old != best_promo:
+                account.promotions.remove(old)
+
+        # Ajouter seulement le palier le plus haut s’il n’y est pas
+        if best_promo not in account.promotions.all():
+            account.promotions.add(best_promo)

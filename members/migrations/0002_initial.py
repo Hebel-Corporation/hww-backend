@@ -15,11 +15,11 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AddField(
-            model_name='account',
-            name='rewards',
-            field=models.ManyToManyField(blank=True, to='prices.reward', verbose_name='Account rewards'),
-        ),
+        # migrations.AddField(
+        #     model_name='account',
+        #     name='rewards',
+        #     field=models.ManyToManyField(blank=True, to='prices.reward', verbose_name='Account rewards'),
+        # ),
         migrations.AddField(
             model_name='location',
             name='country',

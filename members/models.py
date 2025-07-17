@@ -92,7 +92,8 @@ class Account(MPTTModel) :
     parent = TreeForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='children')
     position = models.CharField(_("Position at Sponsor"), choices=POSITION, default='left', null=True, blank=True, max_length=10, editable=False)
     office = models.ForeignKey('members.Office', related_name="account_offices_set", blank=True, null=True, on_delete=models.SET_NULL)
-    rewards = models.ManyToManyField("prices.Reward", verbose_name=_("Account rewards"), blank=True)
+    rewards = models.ManyToManyField("prices.Reward", related_name="account_rewards", blank=True)
+    promotions = models.ManyToManyField("prices.Promotion", related_name="account_promotions", blank=True)
     is_active = models.BooleanField(_('Is active'), default=True)
     created_at = models.DateTimeField(_("Date"), auto_now=False, auto_now_add=True)
 

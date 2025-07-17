@@ -33,3 +33,30 @@ class PurchaseBonusAdmin(admin.ModelAdmin):
 class PaymentAdmin(admin.ModelAdmin):
     list_display = ['account', 'office', 'amount', 'payment_type', 'created_at']
 
+
+
+@admin.register(Gift)
+class GiftAdmin(admin.ModelAdmin):
+    list_display = ['name', 'mark', 'image', 'created_at', 'updated_at']
+
+
+
+@admin.register(Reward)
+class RewardAdmin(admin.ModelAdmin):
+    list_display = ['title', 'unit_number', 'unit_type', 'equivalent_amount', 'gift', 'is_active', 'created_at', 'member_count']
+
+    def member_count(self, obj):
+        return obj.account_rewards.count()
+    member_count.short_description = 'Member Count'
+
+
+@admin.register(Promotion)
+class PromotionAdmin(admin.ModelAdmin):
+    list_display = ['title', 'start_date', 'end_date', 'unit_number', 'unit_type', 'equivalent_amount', 'gift', 'is_active', 'member_count']
+
+    def member_count(self, obj):
+        return obj.account_promotions.count()
+    member_count.short_description = 'Member Count'
+
+
+
