@@ -165,45 +165,46 @@ def check_all_promotions(account):
     from prices.models import Promotion, Matching, Referral
 
     now = timezone.now()
-    promotions = Promotion.objects.filter(
+    promotion = Promotion.objects.filter(
         is_active=True,
         start_date__lte=now,
         end_date__gte=now
-    ).order_by('-unit_number')  # Trier du plus haut au plus bas
+    ).first()
 
     best_promo = None
 
-    for promo in promotions:
-        if promo.unit_type == 'matching':
-            count = Matching.objects.filter(
-                grantee=account,
-                is_validated=True,
-                created_at__range=(promo.start_date, promo.end_date)
+    if promotion :
+        for promoItem in promotion.promotionitem_set.all() :
+            if promoItem.unit_type == 'matching':
+                count = Matching.objects.filter(
+                    grantee=account,
+                    is_validated=True,
+                    created_at__range=(promoItem.promotion.start_date, promoItem.promotion.end_date)
             ).count()
-        elif promo.unit_type == 'referral':
-            count = Referral.objects.filter(
-                grantee=account,
-                created_at__range=(promo.start_date, promo.end_date)
-            ).count()
-        else:
-            continue
+            elif promoItem.unit_type == 'referral':
+                count = Referral.objects.filter(
+                    grantee=account,
+                    created_at__range=(promoItem.promotion.start_date, promoItem.promotion.end_date)
+                ).count()
+            else:
+                continue
 
-        if count >= promo.unit_number:
-            best_promo = promo
-            break  # Le premier qu’on trouve (car trié du plus haut au plus bas)
+            if count >= promoItem.unit_number:
+                best_promo = promoItem
+                break  # Le premier qu’on trouve (car trié du plus haut au plus bas)
 
-    if best_promo:
-        # Enlever les anciennes promotions de cette période
-        active_promos = account.promotions.filter(
-            start_date__lte=now,
-            end_date__gte=now,
-            unit_type=best_promo.unit_type
-        )
+        if best_promo:
+            # Enlever les anciennes promotions de cette période
+            active_promos = account.promotions.filter(
+                promotion__start_date__lte=now,
+                promotion__end_date__gte=now,
+                unit_type=best_promo.unit_type
+            )
 
-        for old in active_promos:
-            if old != best_promo:
-                account.promotions.remove(old)
+            for old in active_promos:
+                if old != best_promo:
+                    account.promotions.remove(old)
 
-        # Ajouter seulement le palier le plus haut s’il n’y est pas
-        if best_promo not in account.promotions.all():
-            account.promotions.add(best_promo)
+            # Ajouter seulement le palier le plus haut s’il n’y est pas
+            if best_promo not in account.promotions.all():
+                account.promotions.add(best_promo)

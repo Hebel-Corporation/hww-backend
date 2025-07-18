@@ -3,6 +3,7 @@ from django.db import models
 from django.utils.translation import gettext as _
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
+from django.db.models import Q
 
 
 
@@ -62,18 +63,9 @@ class Gift(models.Model) :
 
 class RewardBase(models.Model) :
 
-    UNITS_TYPE = (
-        ('matching', 'Equilibres'),
-        ('referral', 'Parrainages')
-    )
-
     id = models.UUIDField("_ID", primary_key=True, default=uuid.uuid4, editable=False)
     title = models.CharField(max_length=100, null=True, blank=True)
     description = models.TextField(null=True, blank=True)
-    equivalent_amount = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
-    unit_number = models.IntegerField(null=True, blank=True)
-    unit_type = models.CharField(max_length=50, choices=UNITS_TYPE, null=True, blank=True)
-    gift = models.ForeignKey("prices.Gift", null=True, blank=True, on_delete=models.SET_NULL)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -83,10 +75,34 @@ class RewardBase(models.Model) :
 
 
 
-class Reward(RewardBase) :
+class RewardCommonFields(models.Model) :
+    UNITS_TYPE = (
+        ('matching', 'Equilibres'),
+        ('referral', 'Parrainages')
+    )
+
+    id = models.UUIDField("_ID", primary_key=True, default=uuid.uuid4, editable=False)
+    equivalent_amount = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    unit_number = models.IntegerField(null=True, blank=True)
+    unit_type = models.CharField(max_length=50, choices=UNITS_TYPE, null=True, blank=True)
+    gift = models.ForeignKey("prices.Gift", null=True, blank=True, on_delete=models.SET_NULL)
+
+    class Meta:
+        abstract = True
+
+
+class PromotionItem(RewardCommonFields) :
+    promotion = models.ForeignKey("prices.Promotion", null=True, blank=True, on_delete=models.SET_NULL)
 
     def __str__(self) -> str:
-        return str(self.unit_number) + " " + self.unit_type
+        return self.gift.name
+
+
+
+class Reward(RewardBase, RewardCommonFields) :
+
+    def __str__(self) -> str:
+        return str(self.title)
 
 
 
@@ -96,7 +112,23 @@ class Promotion(RewardBase) :
 
     def __str__(self) -> str:
         return self.start_date.strftime('%Y-%m-%d') + " - " + self.end_date.strftime('%Y-%m-%d')
-    
+
+
+    def save(self, *args, **kwargs):
+        if self.is_active:
+            # Désactive toutes les autres promotions actives
+            Promotion.objects.exclude(pk=self.pk).filter(is_active=True).update(is_active=False)
+        super().save(*args, **kwargs)
+
+    # class Meta:
+    #     constraints = [
+    #         models.UniqueConstraint(
+    #             fields=[],
+    #             condition=Q(is_active=True),
+    #             name="only_one_active_promotion"
+    #         )
+    #     ]
+
     
 
 

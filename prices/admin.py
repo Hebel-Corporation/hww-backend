@@ -46,17 +46,28 @@ class RewardAdmin(admin.ModelAdmin):
     list_display = ['title', 'unit_number', 'unit_type', 'equivalent_amount', 'gift', 'is_active', 'created_at', 'member_count']
 
     def member_count(self, obj):
-        return obj.account_rewards.count()
-    member_count.short_description = 'Member Count'
+        return obj.account_rewards.all().count()
+    member_count.short_description = 'Qualification Count'
 
 
 @admin.register(Promotion)
 class PromotionAdmin(admin.ModelAdmin):
-    list_display = ['title', 'start_date', 'end_date', 'unit_number', 'unit_type', 'equivalent_amount', 'gift', 'is_active', 'member_count']
+    list_display = ['title', 'start_date', 'end_date', 'is_active', 'member_count']
+
+    def member_count(self, obj):
+        return sum(item.account_promotions.count() for item in obj.promotionitem_set.all())
+    member_count.short_description = 'Qualification Count'
+
+
+
+@admin.register(PromotionItem)
+class PromotionItemAdmin(admin.ModelAdmin):
+    list_display = ['promotion', 'equivalent_amount', 'unit_number', 'unit_type', 'gift', 'member_count']
 
     def member_count(self, obj):
         return obj.account_promotions.count()
-    member_count.short_description = 'Member Count'
+    member_count.short_description = 'Qualification Count'
+
 
 
 
