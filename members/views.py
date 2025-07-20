@@ -19,8 +19,8 @@ from utils.utils_functions import create_account, get_period_filtered_bonus_quer
 
 from config.serializers import SubscriptionCodeSerializer
 from config.models import SubscriptionCode
-from prices.models import Referral, Matching, Payment, PurchaseBonus
-from prices.serializers import ReferralSerializer, MatchingSerializer, PaymentSerializer, PurchaseBonusSerializer
+from prices.models import Referral, Matching, Payment, PurchaseBonus, Promotion, PromotionItem, Reward
+from prices.serializers import ReferralSerializer, MatchingSerializer, PaymentSerializer, PurchaseBonusSerializer, PromotionSerializer, PromotionItemSerializer, RewardSerializer
 from prices.filters import MatchingFilter, ReferralFilter, PurchaseBonusFilter
 from stock.models import SaleDetail
 from stock.serializers import SaleDetailSerializer
@@ -718,6 +718,66 @@ class OfficeViewSet(viewsets.ModelViewSet) :
 
 
 
+    @action(detail=True, methods=['get'], url_path='promotions')
+    def promotions(self, request, pk):
+        office_instance = self.get_object()
+        office_id = request.query_params.get('office_filter', None)
+        
+        promotions = Promotion.objects.all().order_by('-created_at')
+        
+        promotion_serializer = PromotionSerializer(promotions, many=True, context={'request': request})
+        
+        # for promotion in promotion_serializer.data:
+        #     promotion_items = PromotionItem.objects.filter(promotion=promotion['id'])
+        #     member_accounts = Account.objects.filter(promotions__promotion_items__in=promotion_items)
+        #     if office_id and office_id != 'all' and office_instance.office_type == 'head_office':
+        #         member_accounts = member_accounts.filter(office__id=office_id)
+        #     elif office_instance.office_type == 'sub_office':
+        #         member_accounts = member_accounts.filter(office=office_instance)
+            
+        #     paginator = self.pagination_class()
+        #     paginated_queryset = paginator.paginate_queryset(member_accounts, request)
+            
+        #     promotion['members'] = AccountSerializer(paginated_queryset, many=True).data
+        
+        return Response(promotion_serializer.data)
+
+
+
+    # @action(detail=True, methods=['get'], url_path='promotion-details')
+    # def promotion_details(self, request, pk):
+    #     office_instance = self.get_object()
+    #     office_id = request.query_params.get('office_filter', None)
+        
+
+
+    @action(detail=True, methods=['get'], url_path='rewards')
+    def rewards(self, request, pk):
+        office_instance = self.get_object()
+        office_id = request.query_params.get('office_filter', None)
+        
+        rewards = Reward.objects.all().order_by('equivalent_amount')
+        
+        # if office_id and office_id != 'all' and office_instance.office_type == 'head_office':
+        #     member_accounts = Account.objects.filter(office__id=office_id)
+        # elif office_instance.office_type == 'sub_office':
+        #     member_accounts = Account.objects.filter(office=office_instance)
+        # else:
+        #     member_accounts = Account.objects.all()
+        
+        # Filtrer les récompenses par les membres du bureau
+        reward_serializer = RewardSerializer(rewards, many=True, context={'request': request})
+        # for reward in reward_serializer.data:
+        #     member_accounts_reward = member_accounts.filter(rewards__in=[reward['id']])
+
+        #     paginator = self.pagination_class()
+        #     paginated_queryset = paginator.paginate_queryset(member_accounts_reward, request)
+        #     reward['members'] = AccountSerializer(paginated_queryset, many=True).data
+        
+        return Response(reward_serializer.data)
+
+
+
     def create(self, request):
         office_data = request.data.get('office')
         staff_data = request.data.get('staff')
@@ -1043,6 +1103,8 @@ class AccountViewSet(viewsets.ModelViewSet) :
             'sponsor': sponsor_serializer.data,
             'children': dowlines_serializer.data
         }, status=status.HTTP_200_OK)
+        
+
 
 
 

@@ -3,7 +3,7 @@ from django.db import models
 from django.utils.translation import gettext as _
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
-from django.db.models import Q
+from django.db.models import Q, Sum
 
 
 
@@ -50,7 +50,7 @@ class PurchaseBonus(BonusBaseModel) :
 class Gift(models.Model) :
     id = models.UUIDField("_ID", primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=100)
-    image = models.ImageField(upload_to='media/gifts', null=True, blank=True)
+    image = models.ImageField(upload_to='gifts', null=True, blank=True)
     mark = models.CharField(max_length=50, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -104,6 +104,11 @@ class Reward(RewardBase, RewardCommonFields) :
     def __str__(self) -> str:
         return str(self.title)
 
+    
+    @property
+    def get_reward_qualification_count(self):
+        return self.account_rewards.all().count()
+
 
 
 class Promotion(RewardBase) :
@@ -128,6 +133,11 @@ class Promotion(RewardBase) :
     #             name="only_one_active_promotion"
     #         )
     #     ]
+
+
+    @property
+    def get_promotion_qualification_count(self):
+        return sum(item.account_promotions.count() for item in self.promotionitem_set.all())
 
     
 
