@@ -5,7 +5,8 @@ from .models import *
 @admin.register(Referral)
 class ReferralAdmin(admin.ModelAdmin):
     list_display = ['grantee', 'downline', 'amount', 'office', 'is_paid', 'created_at']
-
+    search_fields = ['grantee__company_id']
+    list_filter = ['is_paid', 'created_at']
 
 
 
@@ -13,6 +14,8 @@ class ReferralAdmin(admin.ModelAdmin):
 class MatchingAdmin(admin.ModelAdmin):
     list_display = ['grantee', 'display_downlines', 'amount', 'office', 'is_paid', 'created_at']
     filter_horizontal = ('downlines',)
+    search_fields = ['grantee__company_id']
+    list_filter = ['is_paid', 'created_at']
 
 
     def display_downlines(self, obj):
@@ -20,12 +23,16 @@ class MatchingAdmin(admin.ModelAdmin):
     display_downlines.short_description = 'Downlines'
 
 
+    
+
+
 
 
 @admin.register(PurchaseBonus)
 class PurchaseBonusAdmin(admin.ModelAdmin):
     list_display = ['grantee', 'amount', 'amount_to_be_paid', 'office', 'is_paid', 'created_at']
-
+    search_fields = ['grantee__company_id']
+    list_filter = ['is_paid', 'created_at']
 
 
 

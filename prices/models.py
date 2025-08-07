@@ -4,7 +4,8 @@ from django.utils.translation import gettext as _
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.db.models import Q, Sum
-
+from utils.utils_functions import check_all_rewards, check_all_promotions
+from django.utils import timezone
 
 
 class BonusBaseModel(models.Model):
@@ -13,7 +14,7 @@ class BonusBaseModel(models.Model):
     amount = models.DecimalField(max_digits=6, decimal_places=2)
     office = models.ForeignKey("members.Office", null=True, on_delete=models.SET_NULL)
     is_paid = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
     updated_at = models.DateTimeField(auto_now=True)
 
 
@@ -28,6 +29,15 @@ class BonusBaseModel(models.Model):
 
 class Referral(BonusBaseModel) :
     downline = models.ForeignKey("members.Account", related_name="referral_downline", null=True, on_delete=models.CASCADE)
+
+
+    def save(self, *args, **kwargs):
+        if self._state.adding :
+            # Check if the member qualifies for a reward after creating a matching for him.
+            check_all_rewards(self.grantee)
+            check_all_promotions(self.grantee)
+
+        super(Referral, self).save(*args, **kwargs)
 
 
 

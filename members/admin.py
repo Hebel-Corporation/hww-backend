@@ -32,6 +32,15 @@ class PackageAdmin(admin.ModelAdmin):
 class AccountAdmin(admin.ModelAdmin):
     mptt_indent_field = "id"
     list_display = ['member', 'company_id', 'referral_account', 'parent', 'office', 'is_active', 'created_at']
+    search_fields = ['company_id', 'member__first_name', 'member__last_name']
+    list_filter = ['is_active', 'office', 'created_at']
+
+    actions = ['rebuild_mptt_tree']
+
+    @admin.action(description="Reconstruire l’arbre MPTT")
+    def rebuild_mptt_tree(self, request, queryset):
+        Account.objects.rebuild()
+        self.message_user(request, "Arbre MPTT pour le modèle Account reconstruit avec succès ✅")
 
 
 

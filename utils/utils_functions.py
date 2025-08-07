@@ -102,6 +102,10 @@ def create_pairing_bonuses(new_member_account, upline, position:str):
 
                 matching.downlines.set([new_member_account,pairing_downline])
                 matching.save()
+
+                # Check if the member qualifies for a reward after creating a matching for him.
+                check_all_rewards(upline)
+                check_all_promotions(upline)
     
         create_pairing_bonuses(new_member_account,upline=upline.parent,position=upline.position)
 
@@ -138,6 +142,8 @@ def check_all_rewards(account):
     Attribue les récompenses permanentes à un membre (équilibres ou referrals)
     """
 
+    print("Call check_all_rewards Func ===============")
+
     from prices.models import Reward
 
     rewards = Reward.objects.filter(is_active=True).order_by('unit_number')
@@ -161,6 +167,8 @@ def check_all_promotions(account):
     """
     Vérifie le palier de promotion atteint et assigne UNIQUEMENT le plus haut niveau.
     """
+
+    print("Call check_all_promotions Func ===============")
 
     from prices.models import Promotion, Matching, Referral
 

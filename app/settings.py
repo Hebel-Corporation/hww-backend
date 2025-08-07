@@ -64,11 +64,11 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'django_filters',
 
-    'authentication',
-    'config',
-    'members',
-    'prices',
-    'stock',
+    'authentication.apps.AuthenticationConfig',
+    'config.apps.ConfigConfig',
+    'members.apps.MembersConfig',
+    'prices.apps.PricesConfig',
+    'stock.apps.StockConfig',
 ]
 
 MIDDLEWARE = [
