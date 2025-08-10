@@ -1,3 +1,4 @@
+from sre_constants import POSSESSIVE_REPEAT_ONE
 from django.shortcuts import get_object_or_404
 from django.db import transaction
 from django.db.models import Q, Count, Sum, Min
@@ -758,26 +759,34 @@ class OfficeViewSet(viewsets.ModelViewSet) :
     def rewards(self, request, pk):
         office_instance = self.get_object()
         office_id = request.query_params.get('office_filter', None)
-        
-        rewards = Reward.objects.all().order_by('equivalent_amount')
-        
-        # if office_id and office_id != 'all' and office_instance.office_type == 'head_office':
-        #     member_accounts = Account.objects.filter(office__id=office_id)
-        # elif office_instance.office_type == 'sub_office':
-        #     member_accounts = Account.objects.filter(office=office_instance)
-        # else:
-        #     member_accounts = Account.objects.all()
-        
-        # Filtrer les récompenses par les membres du bureau
-        reward_serializer = RewardSerializer(rewards, many=True, context={'request': request})
-        # for reward in reward_serializer.data:
-        #     member_accounts_reward = member_accounts.filter(rewards__in=[reward['id']])
+        search_value = request.query_params.get('search', '')
+        reward_id = request.query_params.get('reward_id', None)
 
-        #     paginator = self.pagination_class()
-        #     paginated_queryset = paginator.paginate_queryset(member_accounts_reward, request)
-        #     reward['members'] = AccountSerializer(paginated_queryset, many=True).data
+        reward_serializer = None
+
+        if not reward_id:
+            rewards = Reward.objects.all().order_by('unit_number')
+            reward_serializer = RewardSerializer(rewards, many=True, context={'request': request})
+            reward_serializer = reward_serializer.data
+        else:
+            reward = get_object_or_404(Reward, id=reward_id)
+            reward_serializer = RewardSerializer(reward, many=False, context={'request': request}).data
         
-        return Response(reward_serializer.data)
+            member_accounts = Account.objects.filter(rewards=reward)
+            
+            if office_id and office_id != 'all' and office_instance.office_type == 'head_office':
+                member_accounts = member_accounts.filter(office__id=office_id)
+            elif office_instance.office_type == 'sub_office':
+                member_accounts = member_accounts.filter(office=office_instance)
+                
+            paginator = self.pagination_class()
+            paginated_queryset = paginator.paginate_queryset(member_accounts, request)
+            
+            serialized_accounts = AccountSerializer(paginated_queryset, many=True).data
+            paginated_response = paginator.get_paginated_response(serialized_accounts)
+            reward_serializer['members'] = paginated_response.data
+            
+        return Response(reward_serializer)
 
 
 
@@ -940,7 +949,42 @@ class AccountViewSet(viewsets.ModelViewSet) :
     @action(detail=True, methods=['get'], url_path='sponsor-accounts')
     def sponsor_accounts(self, request, pk):
         account_instance = self.get_object()
-
+        position = request.query_params.get('position', '')
+        
+        if not position or position not in ['left', 'right']:
+            return Response(
+                data={"error": "Position parameter is required and must be 'left' or 'right'"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        direct_children = account_instance.get_children().order_by('created_at')
+        
+        target_account = None
+        
+        if direct_children.count() == 0:
+            target_account = account_instance
+        elif direct_children.count() == 1:
+            if position == 'left':
+                target_account = direct_children.first()
+            else:  
+                target_account = account_instance
+        else:
+            if position == 'left':
+                target_account = direct_children.first()
+            else: 
+                target_account = direct_children[1] if direct_children.count() > 1 else account_instance
+        
+        if (target_account == account_instance and 
+            position == 'right' and 
+            direct_children.count() == 1):
+            network_accounts = [account_instance]
+        else:
+            network_accounts = list(target_account.get_descendants(include_self=True).order_by('created_at'))
+            
+            if (target_account != account_instance and 
+                direct_children.count() == 1):
+                network_accounts.append(account_instance)
+        
         downline_data = [
             {
                 "id": account.id,
@@ -948,7 +992,7 @@ class AccountViewSet(viewsets.ModelViewSet) :
                 "company_id": account.company_id,
                 "descendant_count": account.get_descendants(include_self=False).count()
             }
-            for account in account_instance.get_descendants(include_self=True).order_by('created_at')
+            for account in network_accounts
             if account.get_children().count() < 2
         ]
 
@@ -1101,10 +1145,22 @@ class AccountViewSet(viewsets.ModelViewSet) :
         sponsor_serializer = AccountSerializer(account_instance.parent, many=False, exclude=['lft', 'rght', 'tree_id', 'level'])
         dowlines_serializer = AccountSerializer(account_instance.get_children(), many=True, exclude=['lft', 'rght', 'tree_id', 'level'])
 
+        # Calculer les PVs des enfants gauche et droite
+        left_children = account_instance.get_children().filter(position='left')
+        right_children = account_instance.get_children().filter(position='right')
+        
+        left_pvs = left_children.first().get_pvs if left_children.exists() else 0
+        right_pvs = right_children.first().get_pvs if right_children.exists() else 0
+        
         return Response(data={
             'referral': referral_serializer.data,
             'sponsor': sponsor_serializer.data,
-            'children': dowlines_serializer.data
+            'children': dowlines_serializer.data,
+            'pvs': {
+                'left': left_pvs,
+                'right': right_pvs,
+                'stronger': 'left' if left_pvs > right_pvs else 'right' if left_pvs < right_pvs else 'equal'
+            }
         }, status=status.HTTP_200_OK)
         
 

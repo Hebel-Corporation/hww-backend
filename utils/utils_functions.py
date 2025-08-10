@@ -141,9 +141,6 @@ def check_all_rewards(account):
     """
     Attribue les récompenses permanentes à un membre (équilibres ou referrals)
     """
-
-    print("Call check_all_rewards Func ===============")
-
     from prices.models import Reward
 
     rewards = Reward.objects.filter(is_active=True).order_by('unit_number')
@@ -153,8 +150,7 @@ def check_all_rewards(account):
             count = account.get_matching_count
         elif reward.unit_type == 'referral':
             count = account.get_referral_count
-        else:
-            continue
+
 
         if count >= reward.unit_number:
             if reward not in account.rewards.all():
@@ -167,9 +163,6 @@ def check_all_promotions(account):
     """
     Vérifie le palier de promotion atteint et assigne UNIQUEMENT le plus haut niveau.
     """
-
-    print("Call check_all_promotions Func ===============")
-
     from prices.models import Promotion, Matching, Referral
 
     now = timezone.now()
