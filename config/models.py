@@ -41,5 +41,10 @@ class MatchingPrice(models.Model):
     package_price_percent = models.DecimalField(max_digits=6, decimal_places=3)
 
 
+    class Meta:
+        unique_together = ('begin', 'end')
+        ordering = ['begin']
+
+
     def __str__(self):
         return f"From {self.begin} to {self.end} is {self.package_price_percent}"
