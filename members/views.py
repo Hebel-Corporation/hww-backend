@@ -93,7 +93,7 @@ class OfficeViewSet(viewsets.ModelViewSet) :
             accounts_queryset
             .filter(created_at__year=current_year)
             .annotate(month=TruncMonth("created_at"))
-            .values("month", 'office_id')
+            .values("month")
             .annotate(total=Count("id"))
             .order_by("month")
         )
@@ -722,32 +722,35 @@ class OfficeViewSet(viewsets.ModelViewSet) :
     def promotions(self, request, pk):
         office_instance = self.get_object()
         office_id = request.query_params.get('office_filter', None)
+        search_value = request.query_params.get('search', '')
+        prom_id = request.query_params.get('prom_id', None)
+
+        promotion_serializer = None
+
+        if not prom_id:
+            promotions = Promotion.objects.filter(is_active=True).order_by('-created_at')
+            promotion_serializer = PromotionSerializer(promotions, many=True, context={'request': request})
+            promotion_serializer = promotion_serializer.data
+        else:
+            promotion = get_object_or_404(Promotion, id=prom_id)
+            promotion_serializer = PromotionSerializer(promotion, many=False, context={'request': request}).data
         
-        promotions = Promotion.objects.all().order_by('-created_at')
-        
-        promotion_serializer = PromotionSerializer(promotions, many=True, context={'request': request})
-        
-        # for promotion in promotion_serializer.data:
-        #     promotion_items = PromotionItem.objects.filter(promotion=promotion['id'])
-        #     member_accounts = Account.objects.filter(promotions__promotion_items__in=promotion_items)
-        #     if office_id and office_id != 'all' and office_instance.office_type == 'head_office':
-        #         member_accounts = member_accounts.filter(office__id=office_id)
-        #     elif office_instance.office_type == 'sub_office':
-        #         member_accounts = member_accounts.filter(office=office_instance)
+            promotion_items = PromotionItem.objects.filter(promotion=promotion)
+            member_accounts = Account.objects.filter(promotions__in=promotion_items)
             
-        #     paginator = self.pagination_class()
-        #     paginated_queryset = paginator.paginate_queryset(member_accounts, request)
+            if office_id and office_id != 'all' and office_instance.office_type == 'head_office':
+                member_accounts = member_accounts.filter(office__id=office_id)
+            elif office_instance.office_type == 'sub_office':
+                member_accounts = member_accounts.filter(office=office_instance)
+                
+            paginator = self.pagination_class()
+            paginated_queryset = paginator.paginate_queryset(member_accounts, request)
             
-        #     promotion['members'] = AccountSerializer(paginated_queryset, many=True).data
-        
-        return Response(promotion_serializer.data)
-
-
-
-    # @action(detail=True, methods=['get'], url_path='promotion-details')
-    # def promotion_details(self, request, pk):
-    #     office_instance = self.get_object()
-    #     office_id = request.query_params.get('office_filter', None)
+            serialized_accounts = AccountSerializer(paginated_queryset, many=True).data
+            paginated_response = paginator.get_paginated_response(serialized_accounts)
+            promotion_serializer['members'] = paginated_response.data
+            
+        return Response(promotion_serializer)
         
 
 

@@ -39,7 +39,8 @@ class AccountAdmin(admin.ModelAdmin):
 
     @admin.action(description="Reconstruire l’arbre MPTT")
     def rebuild_mptt_tree(self, request, queryset):
-        Account.objects.rebuild()
+        for node in queryset:
+            node._tree_manager.rebuild()
         self.message_user(request, "Arbre MPTT pour le modèle Account reconstruit avec succès ✅")
 
 

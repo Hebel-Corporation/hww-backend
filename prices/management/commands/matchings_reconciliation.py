@@ -11,7 +11,7 @@ class Command(BaseCommand):
         self.stdout.write(f"🚀 Traitement lancé à {now}")
 
         for account in Account.objects.filter(is_active=True):
-            # if account.get_descendants(include_self=False).count() > 1:
+            account._tree_manager.rebuild()
             if account.get_children().count() > 1:
                 direct_account_downlines = account.get_children().order_by('created_at')
                 left_downline, right_downline = direct_account_downlines
@@ -22,9 +22,11 @@ class Command(BaseCommand):
                 left_count = left_downline_leg.count()
                 right_count = right_downline_leg.count()
                 min_count = min(left_count, right_count)
+
+                from prices.models import Matching
                 
                 # Vérifier s'il y a de nouveaux matchings possibles
-                if min_count > account.get_matching_count:
+                if min_count > account.get_matching_count and account.get_referral_count > 0:
                     # Déterminer quelle branche a le minimum
                     if left_count <= right_count:
                         minimal_branch = left_downline_leg
@@ -40,10 +42,6 @@ class Command(BaseCommand):
                     
                     self.stdout.write(f"  → Compte {account.company_id}: {new_matchings_count} nouveaux matchings possibles")
                     self.stdout.write(f"    Branche minimale: {branch_name} ({min_count} membres) avec {account.get_matching_count} matchings")
-                    
-                    # Récupérer les enfants de la branche minimale qui n'ont pas encore été matchés
-                    # Importer le modèle Matching pour accéder aux downlines
-                    from prices.models import Matching
                     
                     # Récupérer tous les IDs des enfants déjà utilisés dans les matchings de ce compte
                     existing_matching_downlines = Matching.objects.filter(
@@ -96,7 +94,7 @@ class Command(BaseCommand):
                                     grantee=account,
                                     amount=amount,
                                     office=new_member_account.office,
-                                    created_at=new_member_account.created_at
+                                    created_at=new_member_account.created_at,
                                 )
                                 
                                 matching.downlines.set([new_member_account, pairing_downline])
@@ -114,6 +112,13 @@ class Command(BaseCommand):
                             self.stdout.write(f"❌ Erreur lors de la création du matching: {str(e)}")
                     
                     self.stdout.write(f"→ {len(unmatched_children)} enfants traités de la branche {branch_name}")
+                elif account.get_referral_count == 0:
+                    matchings_to_delete = Matching.objects.filter(grantee=account, is_paid=False)
+                    count_to_delete = matchings_to_delete.count()
+                    if count_to_delete > 0 :
+                        matchings_to_delete.delete()
+                        self.stdout.write(f"→ Suppression des {count_to_delete} matchings non payés du compte {account.company_id}")
+                    self.stdout.write(f"→ Le compte {account.company_id}: n'a pas le droit de faire de matching (il n'a jamais fait de referral)")
                 else:
                     # Pas de nouveaux matchings possibles
                     self.stdout.write(f"→ Compte {account.company_id}: Aucun nouveau matching (min: {min_count}, déjà accordés: {account.get_matching_count})")

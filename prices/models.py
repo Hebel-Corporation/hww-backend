@@ -121,6 +121,8 @@ class Reward(RewardBase, RewardCommonFields) :
 
 
 
+
+
 class Promotion(RewardBase) :
     start_date = models.DateTimeField(null=True, blank=True)
     end_date = models.DateTimeField(null=True, blank=True)
@@ -146,7 +148,16 @@ class Promotion(RewardBase) :
 
 
     @property
-    def get_promotion_qualification_count(self):
+    def get_promotionItem_qualification_unit_count(self):
+        count = 0
+        for promoItem in self.promotionitem_set.all():
+            if promoItem.unit_number:
+                count += promoItem.unit_number
+        return count
+    
+
+    @property
+    def get_account_qualification_count(self):
         return sum(item.account_promotions.count() for item in self.promotionitem_set.all())
 
     

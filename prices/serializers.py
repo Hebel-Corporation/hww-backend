@@ -53,13 +53,19 @@ class GiftSerializer(QueryFieldsMixin, serializers.ModelSerializer):
 class PromotionSerializer(QueryFieldsMixin, serializers.ModelSerializer):
     qualification_count = serializers.SerializerMethodField()
     total_bonus_concerned = serializers.SerializerMethodField()
+    account_qualification_count = serializers.SerializerMethodField()
     
     class Meta:
         model = Promotion
         fields = '__all__'
         
     def get_qualification_count(self, obj):
-        return obj.get_promotion_qualification_count
+        return obj.get_promotionItem_qualification_unit_count
+        
+    
+    def get_account_qualification_count(self, obj):
+        return obj.get_account_qualification_count
+
 
     def get_total_bonus_concerned(self, obj):
 
@@ -80,6 +86,7 @@ class PromotionItemSerializer(QueryFieldsMixin, serializers.ModelSerializer):
     
     promotion = PromotionSerializer(many=False, read_only=True)
     gift = GiftSerializer(many=False, read_only=True)
+    unit_type_display = serializers.CharField(source='get_unit_type_display', read_only=True)
     
     class Meta:
         model = PromotionItem

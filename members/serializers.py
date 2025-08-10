@@ -89,6 +89,7 @@ class AccountSerializer(QueryFieldsMixin, serializers.ModelSerializer):
     referral_count = serializers.SerializerMethodField()
     puchase_bonus_count = serializers.SerializerMethodField()
     member = serializers.SerializerMethodField()
+    office = OfficeSerializer(many=False, read_only=True)
 
     class Meta:
         model = Account
@@ -144,10 +145,11 @@ class AccountSerializer(QueryFieldsMixin, serializers.ModelSerializer):
         }
 
 
-    # children = serializers.SerializerMethodField()
-
-    # def get_children(self, obj):
-    #     return AccountSerializer(obj.get_children(), many=True).data
+    def to_representation(self, instance):
+        from prices.serializers import PromotionItemSerializer
+        data = super().to_representation(instance)
+        data["promotions"] = PromotionItemSerializer(instance.promotions, many=True).data
+        return data
 
     
     # Other solution to render flat object list
