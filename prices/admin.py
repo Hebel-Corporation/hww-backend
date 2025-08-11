@@ -62,7 +62,7 @@ class PromotionAdmin(admin.ModelAdmin):
     list_display = ['title', 'start_date', 'end_date', 'is_active', 'member_count']
 
     def member_count(self, obj):
-        return obj.get_promotion_qualification_count
+        return obj.get_account_qualification_count
     member_count.short_description = 'Qualification Count'
 
 
