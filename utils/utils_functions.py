@@ -65,7 +65,7 @@ def create_account(referral, sponsor, member, office, package_id):
 
 
 
-# TODO : A EXECUTER AVANT D'ENREGISTRER LE COMPTE
+# A EXECUTER AVANT D'ENREGISTRER LE COMPTE
 def create_pairing_bonuses(new_member_account, upline, position:str):
    
     if upline :

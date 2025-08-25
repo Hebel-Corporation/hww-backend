@@ -9,6 +9,9 @@ from config.models import SubscriptionCode
 from decimal import Decimal
 from utils.utils_functions import create_pairing_bonuses
 from django.contrib.contenttypes.models import ContentType
+from django.utils import timezone
+from datetime import timedelta
+
 
 
 class Country(models.Model) :
@@ -135,6 +138,11 @@ class Account(MPTTModel) :
     @property
     def get_matching_count(self):
         return Matching.objects.filter(grantee=self).count()
+
+    
+    @property
+    def get_daily_matching_count(self):
+        return Matching.objects.filter(grantee=self, created_at__gte=timezone.now() - timedelta(days=1)).count()
 
 
     @property

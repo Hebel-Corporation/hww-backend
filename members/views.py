@@ -178,19 +178,23 @@ class OfficeViewSet(viewsets.ModelViewSet) :
             purchase_bonus = PurchaseBonus.objects.filter(is_paid=False).order_by('-created_at')
             matchings = Matching.objects.filter(is_paid=False).order_by('-created_at')
             referrals = Referral.objects.filter(is_paid=False).order_by('-created_at')
+            payments = Payment.objects.all().order_by('-created_at')
         elif period_filter == 'daily' :
             purchase_bonus = PurchaseBonus.objects.filter(is_paid=False, created_at__date=now.date()).order_by('-created_at')
             matchings = Matching.objects.filter(is_paid=False, created_at__date=now.date()).order_by('-created_at')
             referrals = Referral.objects.filter(is_paid=False, created_at__date=now.date()).order_by('-created_at')
+            payments = Payment.objects.filter(created_at__date=now.date()).order_by('-created_at')
         elif period_filter == 'weekly' :
             start_of_week = now - timedelta(days=now.weekday())  # Lundi
             purchase_bonus = PurchaseBonus.objects.filter(is_paid=False, created_at__date__gte=start_of_week.date()).order_by('-created_at')
             matchings = Matching.objects.filter(is_paid=False, created_at__date__gte=start_of_week.date()).order_by('-created_at')
             referrals = Referral.objects.filter(is_paid=False, created_at__date__gte=start_of_week.date()).order_by('-created_at')
+            payments = Payment.objects.filter(created_at__date__gte=start_of_week.date()).order_by('-created_at')
         elif period_filter == 'monthly' :
             purchase_bonus = PurchaseBonus.objects.filter(is_paid=False, created_at__year=now.year, created_at__month=now.month).order_by('-created_at')
             matchings = Matching.objects.filter(is_paid=False, created_at__year=now.year, created_at__month=now.month).order_by('-created_at')
             referrals = Referral.objects.filter(is_paid=False, created_at__year=now.year, created_at__month=now.month).order_by('-created_at')
+            payments = Payment.objects.filter(created_at__year=now.year, created_at__month=now.month).order_by('-created_at')
 
 
         
@@ -198,10 +202,27 @@ class OfficeViewSet(viewsets.ModelViewSet) :
             purchase_bonus = purchase_bonus.filter(office__id=office_id)
             matchings = matchings.filter(office__id=office_id)
             referrals = referrals.filter(office__id=office_id)
+            payments = payments.filter(account__office__id=office_id)
         elif office_instance.office_type == 'sub_office':
             purchase_bonus = purchase_bonus.filter(office=office_instance)
             matchings = matchings.filter(office=office_instance)
             referrals = referrals.filter(office=office_instance)
+            payments = payments.filter(account__office=office_instance)
+        
+        if activity_type == 'PAYMENTS':
+            payments_serialized = PaymentSerializer(payments, many=True)
+            paginator = self.pagination_class()
+            paginator.page_size = 15
+            try:
+                paginated_payments = paginator.paginate_queryset(payments_serialized.data, request)
+            except NotFound:
+                # Forcer la page à 1 si la page demandée n'existe pas
+                request.GET._mutable = True  # Permet de modifier les paramètres GET
+                request.GET['page'] = '1'
+                request.GET._mutable = False
+                paginated_payments = paginator.paginate_queryset(payments_serialized, request)
+            
+            return paginator.get_paginated_response(paginated_payments)
 
         
         if activity_type == 'TOTALS':
@@ -247,6 +268,7 @@ class OfficeViewSet(viewsets.ModelViewSet) :
                 "purchase_bonus": total_purchase_bonus,
                 "matchings": total_matchings,
                 "referrals": total_referrals,
+                "total_payment": payments.aggregate(total=Sum('amount'))['total'] or 0,
                 "balance": {
                     "total_received": total_received,
                     "sold": total_received - total_bonuses
@@ -293,7 +315,7 @@ class OfficeViewSet(viewsets.ModelViewSet) :
 
 
         paginator = self.pagination_class()
-        paginator.page_size = 30
+        paginator.page_size = 15
 
         sorted_bonuses = sorted(bonuses, key=lambda x: x.get('grantee__id', 0), reverse=True)
         try:
@@ -563,7 +585,7 @@ class OfficeViewSet(viewsets.ModelViewSet) :
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         
-        return Response(data=PaymentSerializer(payment).data,status=status.HTTP_201_CREATED)
+        return Response(data=PaymentSerializer(payment, exclude=['account']).data,status=status.HTTP_201_CREATED)
     
 
 
@@ -588,74 +610,6 @@ class OfficeViewSet(viewsets.ModelViewSet) :
             raise ValidationError("Le montant du paiement est invalide")
 
         try:
-            # with transaction.atomic():
-            #     # Récupérer tous les bonus d'achat non payés
-            #     bonuses = PurchaseBonus.objects.filter(
-            #         grantee=account_instance,
-            #         is_paid=False
-            #     ).order_by('amount_to_be_paid')
-
-            #     if not bonuses.exists():
-            #         return Response(
-            #             {"error": "Aucun bonus d'achat disponible"}, 
-            #             status=status.HTTP_400_BAD_REQUEST
-            #         )
-
-            #     # 1. Chercher un bonus exact
-            #     exact_bonus = bonuses.filter(amount_to_be_paid=budget).first()
-            #     if exact_bonus:
-            #         exact_bonus.is_paid = True
-            #         exact_bonus.amount_to_be_paid = 0
-            #         exact_bonus.save()
-            #         paid_bonuses = [str(exact_bonus.id)]
-            #         message = f"Bonus d'achat payé avec montant exact de {budget}$"
-                
-            #     else:
-            #         # 2. Chercher une combinaison
-            #         combination_found = False
-            #         paid_bonuses = []
-                    
-            #         for r in range(2, len(bonuses) + 1):
-            #             for combo in combinations(bonuses, r):
-            #                 if sum(b.amount_to_be_paid for b in combo) == budget:
-            #                     for bonus in combo:
-            #                         bonus.is_paid = True
-            #                         bonus.amount_to_be_paid = 0
-            #                         bonus.save()
-            #                         paid_bonuses.append(str(bonus.id))
-            #                     combination_found = True
-            #                     message = f"Combinaison de bonus d'achat trouvée pour {budget}$"
-            #                     break
-            #             if combination_found:
-            #                 break
-
-            #         if not combination_found:
-            #             # 3. Chercher un bonus supérieur
-            #             bonus_sup = bonuses.filter(amount__gt=budget).first()
-            #             if bonus_sup:
-            #                 bonus_sup.amount_to_be_paid -= budget
-            #                 bonus_sup.save()
-            #                 paid_bonuses = [str(bonus_sup.id)]
-            #                 message = f"Bonus d'achat réduit de {budget}$"
-            #             else:
-            #                 return Response(
-            #                     {"error": "Aucun bonus d'achat produit disponible pour ce montant"}, 
-            #                     status=status.HTTP_400_BAD_REQUEST
-            #                 )
-
-            #     # Créer l'enregistrement du paiement
-            #     payment = Payment.objects.create(
-            #         office=office_instance,
-            #         account=account_instance,
-            #         amount=budget,
-            #         payment_type='purchase_payment',
-            #         bonuses=paid_bonuses
-            #     )
-
-            #     return Response({
-            #         "message": message,
-            #         "payment": PaymentSerializer(payment).data
-            #     }, status=status.HTTP_201_CREATED)
 
             with transaction.atomic():
                 # Récupérer tous les bonus d'achat non payés
@@ -847,7 +801,7 @@ def create_payment_record(office, account, amount, bonuses):
 
     return Response({
         "message": f"Bonus d'achat traités pour {amount}$",
-        "payment": PaymentSerializer(payment).data
+        "payment": PaymentSerializer(payment, exclude=['account']).data
     }, status=status.HTTP_201_CREATED)
 
 
@@ -1131,7 +1085,7 @@ class AccountViewSet(viewsets.ModelViewSet) :
 
         paginator = self.pagination_class()
         paginated_queryset = paginator.paginate_queryset(payment_queryset, request)
-        payment_serializer = PaymentSerializer(paginated_queryset, many=True)
+        payment_serializer = PaymentSerializer(paginated_queryset, many=True, exclude=['account'])
 
         return paginator.get_paginated_response(payment_serializer.data)
 

@@ -37,10 +37,21 @@ class PaymentSerializer(QueryFieldsMixin, serializers.ModelSerializer):
 
     payment_type_display = serializers.CharField(source='get_payment_type_display', read_only=True)
     office = OfficeSerializer(many=False)
+    account = AccountSerializer(many=False)
 
     class Meta:
         model = Payment
         fields = '__all__'
+
+
+    def __init__(self, *args, **kwargs):
+
+        exclude_fields = kwargs.pop('exclude', None)
+        super().__init__(*args, **kwargs)
+
+        if exclude_fields:
+            for field in exclude_fields:
+                self.fields.pop(field)
 
 
 class GiftSerializer(QueryFieldsMixin, serializers.ModelSerializer):
