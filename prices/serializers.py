@@ -62,7 +62,7 @@ class GiftSerializer(QueryFieldsMixin, serializers.ModelSerializer):
 
 
 class PromotionSerializer(QueryFieldsMixin, serializers.ModelSerializer):
-    qualification_count = serializers.SerializerMethodField()
+    qualification_bonus_count = serializers.SerializerMethodField()
     total_bonus_concerned = serializers.SerializerMethodField()
     account_qualification_count = serializers.SerializerMethodField()
     
@@ -70,8 +70,8 @@ class PromotionSerializer(QueryFieldsMixin, serializers.ModelSerializer):
         model = Promotion
         fields = '__all__'
         
-    def get_qualification_count(self, obj):
-        return obj.get_promotionItem_qualification_unit_count
+    def get_qualification_bonus_count(self, obj):
+        return obj.get_promotionItem_qualification_bonus_count
         
     
     def get_account_qualification_count(self, obj):

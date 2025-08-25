@@ -28,7 +28,7 @@ from stock.serializers import SaleDetailSerializer
 
 from django.conf import settings
 from django.db.models.functions import TruncMonth
-from datetime import datetime
+from datetime import datetime, date
 import calendar
 import json
 from django.utils import timezone
@@ -388,6 +388,7 @@ class OfficeViewSet(viewsets.ModelViewSet) :
     
     @action(detail=True, methods=['post'], url_path='member-registration')
     def create_member(self,request, pk=None):
+        from rapidfuzz import fuzz
 
         office_instance = self.get_object()
 
@@ -398,6 +399,28 @@ class OfficeViewSet(viewsets.ModelViewSet) :
 
         try :
             with transaction.atomic():
+                if member_data:
+                    first_name = member_data.get('first_name', '').strip()
+                    last_name = member_data.get('last_name', '').strip()
+                    current_full_name = f"{first_name} {last_name}".strip().lower()
+                    
+                    last_member = CustomUser.objects.all().order_by('-date_joined').first()
+
+                    if last_member:
+                        last_full_name = f"{last_member.first_name} {last_member.last_name}".strip().lower()
+                        similarity_ratio = fuzz.ratio(current_full_name, last_full_name)
+                        
+                        # Si similarité > 95% et critères multiples correspondent
+                        if similarity_ratio > 95 and last_member.office == office_instance and member_data.get('phone') == last_member.phone and member_data.get('gender') == last_member.gender:
+                            # Retourner le membre existant
+                            return Response(
+                                {
+                                    "error": "Un Membre avec des informations similaires a été créé récemment - Veuillez vérifier le réseau du membre pour en être sûr avant de créer un nouveau membre",
+                                    "similarity": similarity_ratio,
+                                    "details": "Un membre avec des informations similaires a été créé récemment"
+                                },
+                                status=status.HTTP_400_BAD_REQUEST
+                            )
 
                 is_first_node = Account.objects.count() < 1
 
@@ -444,18 +467,39 @@ class OfficeViewSet(viewsets.ModelViewSet) :
 
     @action(detail=True, methods=['post'], url_path='member-registration-account')
     def create_member_account(self,request, pk=None):
+        from datetime import timedelta
 
         office_instance = self.get_object()
 
         api_data = request.data
         package_id = api_data.get('package', None)
+        member_id = api_data.get('member', None)
 
         try :
             with transaction.atomic():
+                # Vérifier si un compte similaire a été créé récemment pour ce membre
+                recent_time = timezone.now() - timedelta(minutes=2)
+                recent_account = Account.objects.filter(
+                    member__id=member_id,
+                    office=office_instance,
+                    created_at__gte=recent_time
+                ).order_by('-created_at').first()
+                
+                if recent_account:
+                    
+                    if (recent_account.referral_account.company_id == api_data.get('referral_account', None) and 
+                        recent_account.parent.company_id == api_data.get('sponsor_account', None)):
+                        return Response(
+                            {
+                                "message": "Le compte similaire a été créé récemment - Veuillez vérifier le réseau du membre pour en être sûr avant de créer un nouveau compte",
+                                "data": AccountSerializer(recent_account).data
+                            },
+                            status=status.HTTP_400_BAD_REQUEST
+                        )
 
                 referral_account = get_object_or_404(Account, company_id=api_data.get('referral_account', None))
                 sponsor_account = get_object_or_404(Account, company_id=api_data.get('sponsor_account', None))
-                member = get_object_or_404(CustomUser, id=api_data.get('member', None))
+                member = get_object_or_404(CustomUser, id=member_id)
 
                 # call create account util function
                 account = create_account(

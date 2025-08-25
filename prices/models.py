@@ -148,11 +148,38 @@ class Promotion(RewardBase) :
 
 
     @property
-    def get_promotionItem_qualification_unit_count(self):
+    def get_promotionItem_qualification_bonus_count(self):
+        from members.models import Account
         count = 0
+        
         for promoItem in self.promotionitem_set.all():
-            if promoItem.unit_number:
-                count += promoItem.unit_number
+            # Pour chaque compte qui a qualifié pour cette promotion item
+            for account in promoItem.account_promotions.all():
+                if promoItem.unit_type == 'matching':
+                    # Compter les matchings créés pendant la période de promotion
+                    matching_count = Matching.objects.filter(
+                        grantee=account,
+                        created_at__range=(self.start_date, self.end_date),
+                        is_validated=True
+                    ).count()
+                    count += matching_count
+                    
+                elif promoItem.unit_type == 'referral':
+                    # Compter les referrals créés pendant la période de promotion
+                    referral_count = Referral.objects.filter(
+                        grantee=account,
+                        created_at__range=(self.start_date, self.end_date)
+                    ).count()
+                    count += referral_count
+                    
+                elif promoItem.unit_type == 'purchase_bonus':
+                    # Compter les bonus d'achat créés pendant la période de promotion
+                    purchase_bonus_count = PurchaseBonus.objects.filter(
+                        grantee=account,
+                        created_at__range=(self.start_date, self.end_date)
+                    ).count()
+                    count += purchase_bonus_count
+                    
         return count
     
 
