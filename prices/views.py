@@ -17,7 +17,7 @@ class ReferralViewSet(viewsets.ModelViewSet) :
 
 
 class MatchingViewSet(viewsets.ModelViewSet) :
-    queryset = Matching.objects.all()
+    queryset = Matching.objects.filter(is_validated=True)
     serializer_class = MatchingSerializer
     permission_classes = [IsAuthenticated]
 

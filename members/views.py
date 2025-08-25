@@ -80,11 +80,11 @@ class OfficeViewSet(viewsets.ModelViewSet) :
         purchase_bonus_queryset = []
 
         if office_instance.office_type == 'head_office':
-            matchings_queryset = Matching.objects.all() if office_id is None or office_id == 'all' else Matching.objects.filter(office__id=office_id)
+            matchings_queryset = Matching.objects.all(is_validated=True) if office_id is None or office_id == 'all' else Matching.objects.filter(office__id=office_id, is_validated=True)
             accounts_queryset = Account.objects.all() if office_id is None or office_id == 'all' else Account.objects.filter(office__id=office_id)
             purchase_bonus_queryset = PurchaseBonus.objects.all() if office_id is None or office_id == 'all' else PurchaseBonus.objects.filter(office__id=office_id)
         elif office_instance.office_type == 'sub_office' :
-            matchings_queryset = Matching.objects.filter(office=office_instance)
+            matchings_queryset = Matching.objects.filter(office=office_instance, is_validated=True)
             accounts_queryset = Account.objects.filter(office=office_instance)
             purchase_bonus_queryset = PurchaseBonus.objects.filter(office=office_instance)
 
@@ -176,23 +176,23 @@ class OfficeViewSet(viewsets.ModelViewSet) :
 
         if period_filter == 'all' :
             purchase_bonus = PurchaseBonus.objects.filter(is_paid=False).order_by('-created_at')
-            matchings = Matching.objects.filter(is_paid=False).order_by('-created_at')
+            matchings = Matching.objects.filter(is_paid=False, is_validated=True).order_by('-created_at')
             referrals = Referral.objects.filter(is_paid=False).order_by('-created_at')
             payments = Payment.objects.all().order_by('-created_at')
         elif period_filter == 'daily' :
             purchase_bonus = PurchaseBonus.objects.filter(is_paid=False, created_at__date=now.date()).order_by('-created_at')
-            matchings = Matching.objects.filter(is_paid=False, created_at__date=now.date()).order_by('-created_at')
+            matchings = Matching.objects.filter(is_paid=False, created_at__date=now.date(), is_validated=True).order_by('-created_at')
             referrals = Referral.objects.filter(is_paid=False, created_at__date=now.date()).order_by('-created_at')
             payments = Payment.objects.filter(created_at__date=now.date()).order_by('-created_at')
         elif period_filter == 'weekly' :
             start_of_week = now - timedelta(days=now.weekday())  # Lundi
             purchase_bonus = PurchaseBonus.objects.filter(is_paid=False, created_at__date__gte=start_of_week.date()).order_by('-created_at')
-            matchings = Matching.objects.filter(is_paid=False, created_at__date__gte=start_of_week.date()).order_by('-created_at')
+            matchings = Matching.objects.filter(is_paid=False, created_at__date__gte=start_of_week.date(), is_validated=True).order_by('-created_at')
             referrals = Referral.objects.filter(is_paid=False, created_at__date__gte=start_of_week.date()).order_by('-created_at')
             payments = Payment.objects.filter(created_at__date__gte=start_of_week.date()).order_by('-created_at')
         elif period_filter == 'monthly' :
             purchase_bonus = PurchaseBonus.objects.filter(is_paid=False, created_at__year=now.year, created_at__month=now.month).order_by('-created_at')
-            matchings = Matching.objects.filter(is_paid=False, created_at__year=now.year, created_at__month=now.month).order_by('-created_at')
+            matchings = Matching.objects.filter(is_paid=False, created_at__year=now.year, created_at__month=now.month, is_validated=True).order_by('-created_at')
             referrals = Referral.objects.filter(is_paid=False, created_at__year=now.year, created_at__month=now.month).order_by('-created_at')
             payments = Payment.objects.filter(created_at__year=now.year, created_at__month=now.month).order_by('-created_at')
 
@@ -563,7 +563,7 @@ class OfficeViewSet(viewsets.ModelViewSet) :
                 payment_type = api_data.get('payment_type')
 
                 if payment_type == 'matching_payment' :
-                    if Matching.objects.filter(id__in=bonuse_ids, is_paid=False).exists():
+                    if Matching.objects.filter(id__in=bonuse_ids, is_paid=False, is_validated=True).exists():
                         Matching.objects.filter(id__in=bonuse_ids).update(is_paid=True)
                 elif payment_type == 'referral_payment' :
                     if Referral.objects.filter(id__in=bonuse_ids, is_paid=False).exists():

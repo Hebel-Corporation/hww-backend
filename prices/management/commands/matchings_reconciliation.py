@@ -94,6 +94,7 @@ class Command(BaseCommand):
                                     grantee=account,
                                     amount=amount,
                                     office=new_member_account.office,
+                                    is_validated = account.get_daily_matching_count(date_value=new_member_account.created_at.date()) < matching_price.daily_max_matching,
                                     created_at=new_member_account.created_at,
                                 )
                                 

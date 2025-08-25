@@ -97,7 +97,8 @@ def create_pairing_bonuses(new_member_account, upline, position:str):
                 matching =  Matching.objects.create(
                     grantee = upline,
                     amount = amount,
-                    office = new_member_account.office
+                    office = new_member_account.office,
+                    is_validated = upline.get_daily_matching_count() < matching_price.daily_max_matching
                 )
 
                 matching.downlines.set([new_member_account,pairing_downline])

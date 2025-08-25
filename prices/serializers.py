@@ -84,7 +84,8 @@ class PromotionSerializer(QueryFieldsMixin, serializers.ModelSerializer):
 
         if any(promoItem.unit_type == 'matching' for promoItem in obj.promotionitem_set.all()):
             count += Matching.objects.filter(
-                created_at__range=(obj.start_date, obj.end_date)
+                created_at__range=(obj.start_date, obj.end_date),
+                is_validated=True
             ).count()
         if any(promoItem.unit_type == 'referral' for promoItem in obj.promotionitem_set.all()):
             count += Referral.objects.filter(

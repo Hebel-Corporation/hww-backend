@@ -140,9 +140,11 @@ class Account(MPTTModel) :
         return Matching.objects.filter(grantee=self).count()
 
     
-    @property
-    def get_daily_matching_count(self):
-        return Matching.objects.filter(grantee=self, created_at__gte=timezone.now() - timedelta(days=1)).count()
+    def get_daily_matching_count(self, date_value=timezone.now().date()):
+        return Matching.objects.filter(
+            grantee=self, 
+            created_at__date=date_value
+        ).count()
 
 
     @property
@@ -172,7 +174,7 @@ class Account(MPTTModel) :
     @property
     def get_balance(self):
         referrals = Referral.objects.filter(grantee=self, is_paid=False) # Récupérer les referrals associés à un compte
-        matchings = Matching.objects.filter(grantee=self, is_paid=False) # Récupérer les matchings associés à un compte
+        matchings = Matching.objects.filter(grantee=self, is_paid=False, is_validated=True) # Récupérer les matchings associés à un compte
         purchase_bonus = PurchaseBonus.objects.filter(grantee=self, is_paid=False) # Récupérer les bonus sur achat des produits à un compte
 
         # Combiner les résultats

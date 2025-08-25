@@ -43,7 +43,7 @@ class Referral(BonusBaseModel) :
 
 class Matching(BonusBaseModel) :
     downlines = models.ManyToManyField("members.Account", related_name="matching_downlines")
-    is_validated = models.BooleanField(default=False)
+    is_validated = models.BooleanField(default=True)
 
 
 

@@ -12,7 +12,7 @@ class ReferralAdmin(admin.ModelAdmin):
 
 @admin.register(Matching)
 class MatchingAdmin(admin.ModelAdmin):
-    list_display = ['grantee', 'display_downlines', 'amount', 'office', 'is_paid', 'created_at']
+    list_display = ['grantee', 'display_downlines', 'amount', 'office', 'is_paid', 'created_at', 'is_validated']
     filter_horizontal = ('downlines',)
     search_fields = ['grantee__company_id']
     list_filter = ['is_paid', 'created_at']
