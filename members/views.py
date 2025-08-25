@@ -80,7 +80,7 @@ class OfficeViewSet(viewsets.ModelViewSet) :
         purchase_bonus_queryset = []
 
         if office_instance.office_type == 'head_office':
-            matchings_queryset = Matching.objects.all(is_validated=True) if office_id is None or office_id == 'all' else Matching.objects.filter(office__id=office_id, is_validated=True)
+            matchings_queryset = Matching.objects.filter(is_validated=True) if office_id is None or office_id == 'all' else Matching.objects.filter(office__id=office_id, is_validated=True)
             accounts_queryset = Account.objects.all() if office_id is None or office_id == 'all' else Account.objects.filter(office__id=office_id)
             purchase_bonus_queryset = PurchaseBonus.objects.all() if office_id is None or office_id == 'all' else PurchaseBonus.objects.filter(office__id=office_id)
         elif office_instance.office_type == 'sub_office' :
