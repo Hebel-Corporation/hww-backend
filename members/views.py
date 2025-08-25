@@ -215,12 +215,12 @@ class OfficeViewSet(viewsets.ModelViewSet) :
             paginator.page_size = 15
             try:
                 paginated_payments = paginator.paginate_queryset(payments_serialized.data, request)
-            except NotFound:
+            except Exception:
                 # Forcer la page à 1 si la page demandée n'existe pas
                 request.GET._mutable = True  # Permet de modifier les paramètres GET
                 request.GET['page'] = '1'
                 request.GET._mutable = False
-                paginated_payments = paginator.paginate_queryset(payments_serialized, request)
+                paginated_payments = paginator.paginate_queryset(payments_serialized.data, request)
             
             return paginator.get_paginated_response(paginated_payments)
 
