@@ -78,15 +78,27 @@ class OfficeViewSet(viewsets.ModelViewSet) :
         matchings_queryset = []
         accounts_queryset = []
         purchase_bonus_queryset = []
+        
+        # Récupérer tous les comptes qualifiés pour les récompenses
+        reward_ids = Reward.objects.values_list('id', flat=True)
+        reward_qualifications = Account.objects.filter(rewards__in=reward_ids)
+
+        promotion_item_ids = PromotionItem.objects.values_list('id', flat=True)
+        promotion_qualifications = Account.objects.filter(promotions__in=promotion_item_ids)
 
         if office_instance.office_type == 'head_office':
             matchings_queryset = Matching.objects.filter(is_validated=True) if office_id is None or office_id == 'all' else Matching.objects.filter(office__id=office_id, is_validated=True)
             accounts_queryset = Account.objects.all() if office_id is None or office_id == 'all' else Account.objects.filter(office__id=office_id)
             purchase_bonus_queryset = PurchaseBonus.objects.all() if office_id is None or office_id == 'all' else PurchaseBonus.objects.filter(office__id=office_id)
+            reward_qualifications = reward_qualifications if office_id is None or office_id == 'all' else reward_qualifications.filter(office__id=office_id)
+            promotion_qualifications = promotion_qualifications if office_id is None or office_id == 'all' else promotion_qualifications.filter(office__id=office_id)
+            
         elif office_instance.office_type == 'sub_office' :
             matchings_queryset = Matching.objects.filter(office=office_instance, is_validated=True)
             accounts_queryset = Account.objects.filter(office=office_instance)
             purchase_bonus_queryset = PurchaseBonus.objects.filter(office=office_instance)
+            reward_qualifications = reward_qualifications.filter(office=office_instance)
+            promotion_qualifications = promotion_qualifications.filter(office=office_instance)
 
         current_year = datetime.now().year
 
@@ -144,7 +156,7 @@ class OfficeViewSet(viewsets.ModelViewSet) :
             "accounts": accounts_queryset.count(),
             "matchings": matchings_queryset.count(),
             "purchase_bonus": purchase_bonus_queryset.count(),
-            "rewards": 0,
+            "rewards": reward_qualifications.count() + promotion_qualifications.count(),
             "stat_data": [
                 {
                     "label": "Enregistrements",
