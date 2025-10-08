@@ -2,6 +2,7 @@ from rest_framework import serializers
 from drf_queryfields import QueryFieldsMixin
 from members.models import *
 from authentication.models import CustomUser
+from django.db.models import Sum
 
 
 class CountrySerializer(QueryFieldsMixin, serializers.ModelSerializer):
@@ -83,6 +84,7 @@ class PackageSerializer(QueryFieldsMixin, serializers.ModelSerializer):
 class AccountSerializer(QueryFieldsMixin, serializers.ModelSerializer):
 
     balance = serializers.SerializerMethodField()
+    total_payment = serializers.SerializerMethodField()
     pvs = serializers.SerializerMethodField()
     downline_count = serializers.SerializerMethodField()
     matching_count = serializers.SerializerMethodField()
@@ -110,6 +112,9 @@ class AccountSerializer(QueryFieldsMixin, serializers.ModelSerializer):
 
     def get_balance(self, instance):
         return instance.get_balance
+
+    def get_total_payment(self, instance):
+        return sum(payment.amount for payment in instance.payments.all())
     
     def get_pvs(self, instance):
         return instance.get_pvs
