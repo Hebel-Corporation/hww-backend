@@ -739,7 +739,7 @@ class OfficeViewSet(viewsets.ModelViewSet) :
         promotion_serializer = None
 
         if not prom_id:
-            promotions = Promotion.objects.filter(is_active=True).order_by('-created_at')
+            promotions = Promotion.objects.all()
             promotion_serializer = PromotionSerializer(promotions, many=True, context={'request': request})
             promotion_serializer = promotion_serializer.data
         else:
