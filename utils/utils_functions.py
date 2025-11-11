@@ -81,7 +81,7 @@ def create_pairing_bonuses(new_member_account, upline, position:str):
         new_downline_leg_length = new_downline_side_direct_downline.get_descendants(include_self=True).count() if new_downline_side_direct_downline else 0 #new_downline_side_direct_downline.get_descendant_count() + 1 
         opposite_leg_lenght = opposite_direct_downline.get_descendants(include_self=True).count() if opposite_direct_downline else 0 #opposite_direct_downline.get_descendant_count() + 1
     
-        if new_downline_leg_length - 1 < opposite_leg_lenght and upline.get_referral_count > 0:
+        if new_downline_leg_length - 1 < opposite_leg_lenght :
 
             pairing_downline = list(opposite_direct_downline.get_descendants(include_self=True).order_by('created_at'))[new_downline_leg_length-1]
 
@@ -89,6 +89,7 @@ def create_pairing_bonuses(new_member_account, upline, position:str):
                 from django.shortcuts import get_object_or_404
                 from members.models import Subscription
 
+                # Get the matching price and calculate the amount
                 matchings_count = upline.get_matching_count + 1
                 matching_price = MatchingPrice.objects.filter(begin__lte=matchings_count,end__gte=matchings_count).first()
                 new_account_subscription = get_object_or_404(Subscription, member_account=new_member_account)
@@ -98,7 +99,7 @@ def create_pairing_bonuses(new_member_account, upline, position:str):
                     grantee = upline,
                     amount = amount,
                     office = new_member_account.office,
-                    is_validated = upline.get_daily_matching_count() < matching_price.daily_max_matching
+                    is_validated = upline.get_daily_matching_count() < matching_price.daily_max_matching if upline.get_referral_count > 0 else False
                 )
 
                 matching.downlines.set([new_member_account,pairing_downline])
