@@ -23,10 +23,10 @@ class Command(BaseCommand):
                 right_count = right_downline_leg.count()
                 min_count = min(left_count, right_count)
 
-                from prices.models import Matching
+                from prices.models import Matching, Referral
                 
                 # Vérifier s'il y a de nouveaux matchings possibles
-                if min_count > account.get_matching_count and account.get_referral_count > 0:
+                if min_count > account.get_matching_count :
                     # Déterminer quelle branche a le minimum
                     if left_count <= right_count:
                         minimal_branch = left_downline_leg
@@ -88,13 +88,21 @@ class Command(BaseCommand):
                                 # Utiliser la subscription du new_member_account pour calculer le montant
                                 new_account_subscription = get_object_or_404(Subscription, member_account=new_member_account)
                                 amount = new_account_subscription.package.price * matching_price.package_price_percent
+
+                                matching_validation = True
+                                if account.get_referral_count >= 0:
+                                    matching_validation = False
+                                else:
+                                    first_referral = Referral.objects.filter(grantee=account).order_by('created_at').first()
+                                    if first_referral.created_at > new_member_account.created_at:
+                                        matching_validation = False
                                 
                                 # Créer le matching bonus
                                 matching = Matching.objects.create(
                                     grantee=account,
                                     amount=amount,
                                     office=new_member_account.office,
-                                    is_validated = account.get_daily_matching_count(date_value=new_member_account.created_at.date()) < matching_price.daily_max_matching,
+                                    is_validated = matching_validation, # account.get_daily_matching_count(date_value=new_member_account.created_at.date()) < matching_price.daily_max_matching,
                                     created_at=new_member_account.created_at,
                                 )
                                 
@@ -113,13 +121,6 @@ class Command(BaseCommand):
                             self.stdout.write(f"❌ Erreur lors de la création du matching: {str(e)}")
                     
                     self.stdout.write(f"→ {len(unmatched_children)} enfants traités de la branche {branch_name}")
-                elif account.get_referral_count == 0:
-                    matchings_to_delete = Matching.objects.filter(grantee=account, is_paid=False)
-                    count_to_delete = matchings_to_delete.count()
-                    if count_to_delete > 0 :
-                        matchings_to_delete.delete()
-                        self.stdout.write(f"→ Suppression des {count_to_delete} matchings non payés du compte {account.company_id}")
-                    self.stdout.write(f"→ Le compte {account.company_id}: n'a pas le droit de faire de matching (il n'a jamais fait de referral)")
                 else:
                     # Pas de nouveaux matchings possibles
                     self.stdout.write(f"→ Compte {account.company_id}: Aucun nouveau matching (min: {min_count}, déjà accordés: {account.get_matching_count})")
