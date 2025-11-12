@@ -620,7 +620,7 @@ class OfficeViewSet(viewsets.ModelViewSet) :
 
                 if payment_type == 'matching_payment' :
                     if Matching.objects.filter(id__in=bonuse_ids, is_paid=False, is_validated=True).exists():
-                        Matching.objects.filter(id__in=bonuse_ids).update(is_paid=True)
+                        Matching.objects.filter(id__in=bonuse_ids, is_validated=True).update(is_paid=True)
                 elif payment_type == 'referral_payment' :
                     if Referral.objects.filter(id__in=bonuse_ids, is_paid=False).exists():
                         Referral.objects.filter(id__in=bonuse_ids).update(is_paid=True)
@@ -1062,7 +1062,7 @@ class AccountViewSet(viewsets.ModelViewSet) :
         period_filter = request.query_params.get('period_filter', '')
         office_code = request.query_params.get('office_code', '')
 
-        matching_queryset = Matching.objects.filter(grantee=account_instance).order_by('is_paid')
+        matching_queryset = Matching.objects.filter(grantee=account_instance, is_validated=True).order_by('is_paid')
         if office_code :
             matching_queryset = matching_queryset.filter(office__office_code=office_code)
 
