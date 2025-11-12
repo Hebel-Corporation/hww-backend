@@ -75,7 +75,8 @@ class OfficeViewSet(viewsets.ModelViewSet) :
         search_value = request.query_params.get('search', '')
         office_id = request.query_params.get('office_id', None)
 
-        matchings_queryset = []
+        valid_matchings_queryset = []
+        blacklisted_matchings_queryset = []
         accounts_queryset = []
         purchase_bonus_queryset = []
         
@@ -87,14 +88,16 @@ class OfficeViewSet(viewsets.ModelViewSet) :
         promotion_qualifications = Account.objects.filter(promotions__in=promotion_item_ids)
 
         if office_instance.office_type == 'head_office':
-            matchings_queryset = Matching.objects.filter(is_validated=True) if office_id is None or office_id == 'all' else Matching.objects.filter(office__id=office_id, is_validated=True)
+            valid_matchings_queryset = Matching.objects.filter(is_validated=True) if office_id is None or office_id == 'all' else Matching.objects.filter(office__id=office_id, is_validated=True)
+            blacklisted_matchings_queryset = Matching.objects.filter(is_validated=False) if office_id is None or office_id == 'all' else Matching.objects.filter(office__id=office_id, is_validated=False)
             accounts_queryset = Account.objects.all() if office_id is None or office_id == 'all' else Account.objects.filter(office__id=office_id)
             purchase_bonus_queryset = PurchaseBonus.objects.all() if office_id is None or office_id == 'all' else PurchaseBonus.objects.filter(office__id=office_id)
             reward_qualifications = reward_qualifications if office_id is None or office_id == 'all' else reward_qualifications.filter(office__id=office_id)
             promotion_qualifications = promotion_qualifications if office_id is None or office_id == 'all' else promotion_qualifications.filter(office__id=office_id)
             
         elif office_instance.office_type == 'sub_office' :
-            matchings_queryset = Matching.objects.filter(office=office_instance, is_validated=True)
+            valid_matchings_queryset = Matching.objects.filter(office=office_instance, is_validated=True)
+            blacklisted_matchings_queryset = Matching.objects.filter(office=office_instance, is_validated=False)
             accounts_queryset = Account.objects.filter(office=office_instance)
             purchase_bonus_queryset = PurchaseBonus.objects.filter(office=office_instance)
             reward_qualifications = reward_qualifications.filter(office=office_instance)
@@ -120,8 +123,16 @@ class OfficeViewSet(viewsets.ModelViewSet) :
             .order_by("month")
         )
 
-        matchings = (
-            matchings_queryset
+        valid_matchings = (
+            valid_matchings_queryset
+            .filter(created_at__year=current_year)
+            .annotate(month=TruncMonth("created_at"))
+            .values("month")
+            .annotate(total=Count("id"))
+            .order_by("month")
+        )
+        blacklisted_matchings = (
+            blacklisted_matchings_queryset
             .filter(created_at__year=current_year)
             .annotate(month=TruncMonth("created_at"))
             .values("month")
@@ -132,10 +143,12 @@ class OfficeViewSet(viewsets.ModelViewSet) :
         # Créer une liste de 12 mois avec 0 par défaut
         accounts_result = []
         purchase_bonus_result = []
-        matchings_result = []
+        valid_matchings_result = []
+        blacklisted_matchings_result = []
         month_map = {sub["month"].month: sub["total"] for sub in subscriptions}
         purchase_bonus_month_map = {sub["month"].month: sub["total"] for sub in purchase_bonus}
-        matchings_month_map = {sub["month"].month: sub["total"] for sub in matchings}
+        valid_matchings_month_map = {sub["month"].month: sub["total"] for sub in valid_matchings}
+        blacklisted_matchings_month_map = {sub["month"].month: sub["total"] for sub in blacklisted_matchings}
 
         for m in range(1, 13):
             accounts_result.append({
@@ -146,15 +159,20 @@ class OfficeViewSet(viewsets.ModelViewSet) :
                 "month": calendar.month_name[m],
                 "value": purchase_bonus_month_map.get(m, 0)
             })
-            matchings_result.append({
+            valid_matchings_result.append({
                 "month": calendar.month_name[m],
-                "value": matchings_month_map.get(m, 0)
+                "value": valid_matchings_month_map.get(m, 0)
+            })
+            blacklisted_matchings_result.append({
+                "month": calendar.month_name[m],
+                "value": blacklisted_matchings_month_map.get(m, 0)
             })
 
 
         stat_data = {
             "accounts": accounts_queryset.count(),
-            "matchings": matchings_queryset.count(),
+            "valid_matchings": valid_matchings_queryset.count(),
+            "blacklisted_matchings": blacklisted_matchings_queryset.count(),
             "purchase_bonus": purchase_bonus_queryset.count(),
             "rewards": reward_qualifications.count() + promotion_qualifications.count(),
             "stat_data": [
@@ -167,8 +185,12 @@ class OfficeViewSet(viewsets.ModelViewSet) :
                     "data": purchase_bonus_result
                 },
                 {
-                    "label": "Equilibres",
-                    "data": matchings_result
+                    "label": "Equilibres valides",
+                    "data": valid_matchings_result
+                },
+                {
+                    "label": "Equilibres bloqués",
+                    "data": blacklisted_matchings_result
                 }
             ]
         }
