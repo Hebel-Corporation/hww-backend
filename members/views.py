@@ -294,7 +294,7 @@ class OfficeViewSet(viewsets.ModelViewSet) :
             total_referrals = referrals.aggregate(total=Sum('amount'))['total'] if referrals else 0
             total_purchase_bonus = purchase_bonus.aggregate(total=Sum('amount_to_be_paid'))['total'] if purchase_bonus else 0
 
-            total_received = subscriptions.aggregate(total=Sum('package__price'))['total'] or 0 + (purchase_bonus.aggregate(total=Sum('sale_detail__amount'))['total'] if purchase_bonus else 0)
+            total_received = (subscriptions.aggregate(total=Sum('package__price'))['total'] or 0) + (purchase_bonus.aggregate(total=Sum('sale_detail__amount'))['total'] if purchase_bonus else 0)
             total_bonuses = total_matchings + total_referrals + total_purchase_bonus
 
 
