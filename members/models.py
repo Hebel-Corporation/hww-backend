@@ -169,6 +169,16 @@ class Account(MPTTModel) :
 
         return pvs
 
+    
+    def has_paid_maintenance(self, date_value=timezone.now()):
+        from stock.models import SaleDetail
+
+        return SaleDetail.objects.filter(
+            member_account=self,
+            created_at__year=date_value.year,
+            created_at__month=date_value.month,
+        ).exists()
+
 
 
     @property

@@ -89,7 +89,7 @@ class Command(BaseCommand):
                                 new_account_subscription = get_object_or_404(Subscription, member_account=new_member_account)
                                 amount = new_account_subscription.package.price * matching_price.package_price_percent
 
-                                matching_validation = account.get_daily_matching_count(date_value=new_member_account.created_at.date()) < matching_price.daily_max_matching
+                                matching_validation = account.has_paid_maintenance(date_value=new_member_account.created_at) and account.get_daily_matching_count(date_value=new_member_account.created_at.date()) < matching_price.daily_max_matching
                                 if account.get_referral_count >= 0:
                                     matching_validation = False
                                 else:

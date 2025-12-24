@@ -2,7 +2,6 @@ import random
 from django.conf import settings
 from django.utils import timezone
 from datetime import timedelta
-from django.utils import timezone
 
 
 def generate_subcription_code() -> str :
@@ -100,7 +99,7 @@ def create_pairing_bonuses(new_member_account, upline, position:str):
                     grantee = upline,
                     amount = amount,
                     office = new_member_account.office,
-                    is_validated = upline.get_daily_matching_count() < matching_price.daily_max_matching if upline.get_referral_count > 0 else False
+                    is_validated = upline.has_paid_maintenance(date_value=new_member_account.created_at) and upline.get_daily_matching_count() < matching_price.daily_max_matching if upline.get_referral_count > 0 else False
                 )
 
                 matching.downlines.set([new_member_account,pairing_downline])
@@ -111,24 +110,6 @@ def create_pairing_bonuses(new_member_account, upline, position:str):
                 check_all_promotions(upline)
     
         create_pairing_bonuses(new_member_account,upline=upline.parent,position=upline.position)
-
-
-
-
-
-
-def has_paid_maintenance(account_instance):
-    from stock.models import SaleDetail
-
-    now = timezone.now()
-
-    return SaleDetail.objects.filter(
-        member_account=account_instance,
-        created_at__year=now.year,
-        created_at__month=now.month,
-    ).exists()
-
-
 
 
 
