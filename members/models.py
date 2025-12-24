@@ -177,6 +177,7 @@ class Account(MPTTModel) :
             member_account=self,
             created_at__year=date_value.year,
             created_at__month=date_value.month,
+            amount__gte=10  # supérieur ou égal à 10
         ).exists()
 
 
