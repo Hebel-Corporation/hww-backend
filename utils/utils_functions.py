@@ -2,6 +2,7 @@ import random
 from django.conf import settings
 from django.utils import timezone
 from datetime import timedelta
+from django.utils import timezone
 
 
 def generate_subcription_code() -> str :
@@ -115,8 +116,18 @@ def create_pairing_bonuses(new_member_account, upline, position:str):
 
 
 
-def has_paid_maintenance(account_instance) :
-    return account_instance.payments.filter(type='maintenance').exists()
+
+def has_paid_maintenance(account_instance):
+    from stock.models import SaleDetail
+
+    now = timezone.now()
+
+    return SaleDetail.objects.filter(
+        member_account=account_instance,
+        created_at__year=now.year,
+        created_at__month=now.month,
+    ).exists()
+
 
 
 
