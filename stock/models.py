@@ -20,14 +20,18 @@ class SaleDetail(models.Model):
 
         if self._state.adding :
 
-            referral_price = PurchaseBonus.objects.create(
-                grantee = self.member_account.referral_account,
-                sale_detail = self,
-                amount = self.amount * Decimal('0.4'), # 40% du monant total des protuits
-                amount_to_be_paid = self.amount * Decimal('0.4'),
-                office = self.office
-            )
-            referral_price.save()
+            amount = self.amount - 10
+            if amount > 0 :
+                calculated_amount = amount * Decimal('0.4')
+
+                purchase_bonus = PurchaseBonus.objects.create(
+                    grantee = self.member_account.referral_account,
+                    sale_detail = self,
+                    amount = calculated_amount, # 40% du monant total des protuits moins 10 USD pour frais de maintenance
+                    amount_to_be_paid = calculated_amount,
+                    office = self.office
+                )
+                purchase_bonus.save()
 
         super(SaleDetail, self).save(*args, **kwargs)
 

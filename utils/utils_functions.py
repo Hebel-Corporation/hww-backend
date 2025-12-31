@@ -157,7 +157,7 @@ def check_all_promotions(account):
     """
     Vérifie le palier de promotion atteint et assigne UNIQUEMENT le plus haut niveau.
     """
-    from prices.models import Promotion, Matching, Referral
+    from prices.models import Promotion, Matching, Referral, PurchaseBonus
 
     now = timezone.now()
     promotion = Promotion.objects.filter(
@@ -166,40 +166,53 @@ def check_all_promotions(account):
         end_date__gte=now
     ).first()
 
+    if not promotion:
+        return
+
     best_promo = None
+    highest_unit_number = 0
 
-    if promotion :
-        for promoItem in promotion.promotionitem_set.all() :
-            if promoItem.unit_type == 'matching':
-                count = Matching.objects.filter(
-                    grantee=account,
-                    is_validated=True,
-                    created_at__range=(promoItem.promotion.start_date, promoItem.promotion.end_date)
+    # Trier par unit_number décroissant pour trouver le plus haut niveau
+    for promoItem in promotion.promotionitem_set.all().order_by('-unit_number'):
+        count = 0
+        
+        if promoItem.unit_type == 'matching':
+            count = Matching.objects.filter(
+                grantee=account,
+                is_validated=True,
+                created_at__range=(promotion.start_date, promotion.end_date)
             ).count()
-            elif promoItem.unit_type == 'referral':
-                count = Referral.objects.filter(
-                    grantee=account,
-                    created_at__range=(promoItem.promotion.start_date, promoItem.promotion.end_date)
-                ).count()
-            else:
-                continue
+        elif promoItem.unit_type == 'referral':
+            count = Referral.objects.filter(
+                grantee=account,
+                created_at__range=(promotion.start_date, promotion.end_date)
+            ).count()
+        elif promoItem.unit_type == 'purchase_bonus':
+            count = PurchaseBonus.objects.filter(
+                grantee=account,
+                created_at__range=(promotion.start_date, promotion.end_date)
+            ).count()
+        else:
+            continue
 
-            if count >= promoItem.unit_number:
-                best_promo = promoItem
-                break  # Le premier qu’on trouve (car trié du plus haut au plus bas)
+        # Garder le plus haut niveau qualifié
+        if count >= promoItem.unit_number and promoItem.unit_number > highest_unit_number:
+            best_promo = promoItem
+            highest_unit_number = promoItem.unit_number
 
-        if best_promo:
-            # Enlever les anciennes promotions de cette période
-            active_promos = account.promotions.filter(
-                promotion__start_date__lte=now,
-                promotion__end_date__gte=now,
-                unit_type=best_promo.unit_type
-            )
+    if best_promo:
+        # Récupérer les IDs actuels pour éviter des requêtes multiples
+        current_promo_ids = set(account.promotions.filter(
+            promotion=promotion,
+            unit_type=best_promo.unit_type
+        ).values_list('id', flat=True))
 
-            for old in active_promos:
-                if old != best_promo:
-                    account.promotions.remove(old)
-
-            # Ajouter seulement le palier le plus haut s’il n’y est pas
-            if best_promo not in account.promotions.all():
-                account.promotions.add(best_promo)
+        # Enlever les anciennes promotions de cette période et ce type
+        if best_promo.id not in current_promo_ids:
+            # Retirer toutes les promotions du même type pour cette période
+            account.promotions.remove(*current_promo_ids)
+            # Ajouter le meilleur palier
+            account.promotions.add(best_promo)
+        elif len(current_promo_ids) > 1 or (len(current_promo_ids) == 1 and best_promo.id not in current_promo_ids):
+            # Nettoyer les doublons ou les mauvais paliers
+            account.promotions.remove(*[pid for pid in current_promo_ids if pid != best_promo.id])
