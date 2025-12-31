@@ -108,6 +108,24 @@ class AccountSerializer(QueryFieldsMixin, serializers.ModelSerializer):
             for field in exclude_fields:
                 self.fields.pop(field)
 
+        if self.context.get('promotion'):
+            self.fields['current_promotion_item_count'] = serializers.SerializerMethodField()
+
+    def get_current_promotion_item_count(self, obj):
+        promotion = self.context.get('promotion')
+        promotion_item = obj.promotions.filter(promotion=promotion).first()
+        if not promotion_item :
+            return 0
+        
+        if promotion_item.unit_type == 'matching' :
+            from prices.models import Matching
+            return Matching.objects.filter(grantee=obj, created_at__range=(promotion.start_date, promotion.end_date), is_validated=True).count()
+        elif promotion_item.unit_type == 'referral' :
+            from prices.models import Referral
+            return Referral.objects.filter(grantee=obj, created_at__range=(promotion.start_date, promotion.end_date)).count()
+        elif promotion_item.unit_type == 'purchase_bonus' :
+            from prices.models import PurchaseBonus
+            return PurchaseBonus.objects.filter(grantee=obj, created_at__range=(promotion.start_date, promotion.end_date)).count()
 
 
     def get_balance(self, instance):

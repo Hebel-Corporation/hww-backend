@@ -779,7 +779,7 @@ class OfficeViewSet(viewsets.ModelViewSet) :
             paginator = self.pagination_class()
             paginated_queryset = paginator.paginate_queryset(member_accounts, request)
             
-            serialized_accounts = AccountSerializer(paginated_queryset, many=True).data
+            serialized_accounts = AccountSerializer(paginated_queryset, many=True, context={'promotion': promotion}).data
             paginated_response = paginator.get_paginated_response(serialized_accounts)
             promotion_serializer['members'] = paginated_response.data
             
